@@ -1,0 +1,6 @@
+{
+  "name": "Memory Grid",
+  "description": "Trò chơi rèn luyện trí nhớ không gian với lưới ô vuông tương tác, nhiều chế độ chơi, thử thách hàng ngày và theo dõi tiến trình thông minh.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
