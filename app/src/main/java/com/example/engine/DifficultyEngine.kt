@@ -8,16 +8,10 @@ object DifficultyEngine {
     /**
      * Calculates difficulty configuration for a given level and mode.
      * Specification rules:
-     * Level 1: 3x3, 3 cells, 1800 ms
-     * Level 2: 3x3, 4 cells, 1800 ms
-     * Level 3: 3x3, 5 cells, 1700 ms
-     * Level 4: 4x4, 5 cells, 1700 ms
-     * Level 5: 4x4, 6 cells, 1600 ms
-     * Level 6: 4x4, 7 cells, 1500 ms
-     * Level 10: 4x4, 9 cells, 1200 ms
-     * Level 15: 5x5, 10 cells, 1100 ms
-     * Level 20: 5x5, 13 cells, 1000 ms
-     * Level 30+: 6x6, increasing cells progressively
+     * Level 1-4: 4x4 free recall, 3 to 6 cells
+     * Level 5-10: 5x5 ordered recall, 10 to 18 cells
+     * Later levels: boards grow to 6x6, 7x7, then 8x8 while the
+     * sequence and reveal speed continue to scale without a hard level cap.
      */
     fun calculateDifficulty(level: Int, mode: GameMode = GameMode.CLASSIC): DifficultyConfig {
         if (mode == GameMode.DAILY) {
@@ -29,38 +23,31 @@ object DifficultyEngine {
             )
         }
 
-        // Progressive Difficulty Ladder:
-        // Starts simple at Level 1, gradually gets harder
+        // Endless progression. Early rounds are a forgiving 4x4 free-recall
+        // game; later rounds grow the board and require the shown order.
         val gridSize = when {
-            level <= 3 -> 3
-            level <= 8 -> 4
-            level <= 14 -> 5
-            else -> 6
+            level <= 4 -> 4
+            level <= 10 -> 5
+            level <= 18 -> 6
+            level <= 28 -> 7
+            else -> 8
         }
 
         val cells = when {
             level == 1 -> 3
             level == 2 -> 4
             level == 3 -> 5
-            level == 4 -> 4
-            level == 5 -> 5
-            level == 6 -> 6
-            level == 7 -> 7
-            level == 8 -> 8
-            level == 9 -> 7
-            level == 10 -> 8
-            level == 11 -> 9
-            level == 12 -> 10
-            level == 13 -> 11
-            level == 14 -> 12
-            else -> minOf(gridSize * gridSize - 6, 12 + (level - 15) / 2)
+            level == 4 -> 6
+            level <= 6 -> 5 + level
+            level <= 10 -> 8 + level
+            else -> minOf(gridSize * gridSize - 4, 18 + (level - 11) * 2)
         }
 
         val baseTime = when {
-            level <= 3 -> 2000L
-            level <= 8 -> 1700L
-            level <= 14 -> 1400L
-            else -> 1100L
+            level <= 4 -> 2200L
+            level <= 10 -> 1800L
+            level <= 18 -> 1450L
+            else -> 1150L
         }
 
         return DifficultyConfig(

@@ -49,6 +49,7 @@ fun GameScreen(
     onCellClick: (Int) -> Unit,
     onExitClick: () -> Unit,
     onPlayAgain: () -> Unit,
+    onRewardedContinue: () -> Unit,
     modifier: Modifier = Modifier,
     onViewLeaderboard: (() -> Unit)? = null
 ) {
@@ -59,6 +60,8 @@ fun GameScreen(
         GameOverScreen(
             summary = uiState.gameEndSummary,
             onPlayAgain = onPlayAgain,
+            onRewardedContinue = onRewardedContinue,
+            canUseRewardedContinue = !uiState.rewardedContinueUsed,
             onGoHome = onExitClick,
             onViewLeaderboard = onViewLeaderboard
         )

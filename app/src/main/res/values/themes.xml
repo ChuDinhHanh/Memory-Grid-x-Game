@@ -1,5 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-
     <style name="Theme.MyApplication" parent="android:Theme.DeviceDefault.NoActionBar" />
+
+    <!-- 1. Cấu hình để Splash hệ thống vô hình và nhường chỗ cho CustomSplashScreen -->
+    <style name="Theme.App.Starting" parent="Theme.SplashScreen">
+        <!-- Đặt nền tối trùng màu với hình bg_splash của bạn -->
+        <item name="windowSplashScreenBackground">#0F172A</item> 
+        
+        <!-- QUAN TRỌNG: Đặt icon hệ thống thành TRONG SUỐT để xóa cái "cũ" -->
+        <item name="windowSplashScreenAnimatedIcon">@android:color/transparent</item>
+        
+        <!-- Sau khi qua màn hình Start sẽ chuyển về Theme chính của App -->
+        <item name="postSplashScreenTheme">@style/Theme.MyApplication</item>
+    </style>
 </resources>

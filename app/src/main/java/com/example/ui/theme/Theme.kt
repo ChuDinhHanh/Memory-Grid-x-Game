@@ -44,11 +44,11 @@ private val LightColorScheme = lightColorScheme(
     tertiary = LightTertiary,
     onTertiary = Color.White,
     background = LightBackground,
-    onBackground = Color(0xFF0F172A),
+    onBackground = Color.White,
     surface = LightSurface,
     onSurface = Color(0xFF0F172A),
     surfaceVariant = LightSurfaceVariant,
-    onSurfaceVariant = Color(0xFF475569),
+    onSurfaceVariant = Color(0xFF6E5A9B),
     error = CoralError,
     onError = Color.White
 )

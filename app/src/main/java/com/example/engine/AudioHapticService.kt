@@ -56,6 +56,18 @@ class AudioHapticService(private val context: Context) {
         }
     }
 
+
+    fun playTargetDisplay() {
+        if (!soundEnabled) return
+        scope.launch {
+            playTone(
+                frequency = 880f,
+                durationMs = 120,
+                envelope = Envelope.FADE_OUT
+            )
+        }
+    }
+
     fun playRecallPrompt() {
         if (!soundEnabled) return
         scope.launch {

@@ -56,7 +56,8 @@ data class GameUiState(
     val dailyChallengeDateKey: String = "",
     val dailyChallengeAlreadyCompletedToday: Boolean = false,
     val requiresStrictSequence: Boolean = false,
-    val selectedSequence: List<Int> = emptyList()
+    val selectedSequence: List<Int> = emptyList(),
+    val rewardedContinueUsed: Boolean = false
 )
 
 class MemoryGridViewModel(application: Application) : AndroidViewModel(application) {
@@ -172,7 +173,9 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
         }
         previousPattern = pattern
 
-        val isStrictSequence = state.level >= 3
+        // Give new players several rounds to learn the board first. From level
+        // 5 onward every highlighted cell must be replayed in its shown order.
+        val isStrictSequence = state.level >= 5
         val stepMap = if (isStrictSequence) {
             pattern.mapIndexed { index, cell -> cell to (index + 1) }.toMap()
         } else {
@@ -497,6 +500,32 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
     fun exitToHome() {
         phaseTimerJob?.cancel()
         _uiState.value = GameUiState(phase = GamePhase.IDLE)
+    }
+
+    /** Called only after the rewarded-ad flow confirms a reward. */
+    fun continueCurrentLevelAfterReward() {
+        val state = _uiState.value
+        if (state.phase != GamePhase.RESULT ||
+            state.gameMode == GameMode.DAILY ||
+            state.rewardedContinueUsed
+        ) return
+
+        phaseTimerJob?.cancel()
+        _uiState.value = state.copy(
+            phase = GamePhase.COUNTDOWN,
+            countdownNumber = 3,
+            lives = 1,
+            combo = 0,
+            selectedCells = emptySet(),
+            selectedSequence = emptyList(),
+            currentlyLitCell = null,
+            revealedSequenceIndices = emptySet(),
+            activeStepNumberMap = emptyMap(),
+            evaluationResult = null,
+            gameEndSummary = null,
+            rewardedContinueUsed = true
+        )
+        startCountdown()
     }
 
     fun toggleSound() {

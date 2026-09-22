@@ -25,6 +25,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Home
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.Replay
+import androidx.compose.material.icons.filled.SmartDisplay
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
@@ -61,6 +62,8 @@ import com.example.ui.theme.VividViolet
 fun GameOverScreen(
     summary: GameEndSummary,
     onPlayAgain: () -> Unit,
+    onRewardedContinue: () -> Unit,
+    canUseRewardedContinue: Boolean,
     onGoHome: () -> Unit,
     onViewLeaderboard: (() -> Unit)? = null,
     modifier: Modifier = Modifier
@@ -218,6 +221,29 @@ fun GameOverScreen(
                 modifier = Modifier.fillMaxWidth(),
                 verticalArrangement = Arrangement.spacedBy(10.dp)
             ) {
+                if (summary.gameMode != GameMode.DAILY && canUseRewardedContinue) {
+                    PrimaryButton(
+                        text = "XEM VIDEO • CHƠI TIẾP",
+                        onClick = onRewardedContinue,
+                        gradientColors = listOf(Color(0xFFFF5FCF), VividViolet),
+                        leadingIcon = {
+                            Icon(
+                                imageVector = Icons.Default.SmartDisplay,
+                                contentDescription = null,
+                                tint = Color.White
+                            )
+                        },
+                        modifier = Modifier.testTag("game_over_rewarded_continue_button")
+                    )
+                    Text(
+                        text = "Một lần mỗi lượt chơi • tiếp tục ở Cấp ${summary.levelReached}",
+                        style = MaterialTheme.typography.labelSmall.copy(
+                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                        ),
+                        textAlign = TextAlign.Center,
+                        modifier = Modifier.fillMaxWidth()
+                    )
+                }
                 PrimaryButton(
                     text = if (summary.gameMode == GameMode.DAILY) "CHƠI LẠI THỬ THÁCH" else "CHƠI LẠI TỪ LEVEL 1",
                     onClick = onPlayAgain,

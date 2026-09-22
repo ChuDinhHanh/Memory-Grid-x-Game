@@ -1,5 +1,4 @@
 package com.example
-
 import android.os.Bundle
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
@@ -9,33 +8,19 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.CalendarToday
-import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.GridOn
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.QueryStats
 import androidx.compose.material.icons.filled.Settings
-import androidx.compose.material3.Icon
-import androidx.compose.material3.MaterialTheme
-import androidx.compose.material3.NavigationBar
-import androidx.compose.material3.NavigationBarItem
-import androidx.compose.material3.NavigationBarItemDefaults
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
-import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
-import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.vector.ImageVector
-import androidx.compose.ui.platform.testTag
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -43,27 +28,23 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.data.model.GameMode
+import com.example.ui.components.CustomBottomBar
 import com.example.ui.screens.AchievementsScreen
+import com.example.ui.screens.CustomSplashScreen
 import com.example.ui.screens.DailyChallengeScreen
 import com.example.ui.screens.GameScreen
 import com.example.ui.screens.HomeScreen
 import com.example.ui.screens.LeaderboardScreen
 import com.example.ui.screens.SettingsScreen
 import com.example.ui.screens.StatisticsScreen
-import com.example.ui.theme.ElectricCyan
 import com.example.ui.theme.MemoryGridTheme
 import com.example.ui.theme.ThemeSetting
 import com.example.ui.viewmodel.MemoryGridViewModel
 
-data class BottomNavItem(
-    val route: String,
-    val title: String,
-    val icon: ImageVector,
-    val testTag: String
-)
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
+        // ĐÃ GỠ BỎ installSplashScreen() ĐỂ BỎ SPLASH CŨ CỦA HỆ THỐNG
         super.onCreate(savedInstanceState)
         enableEdgeToEdge()
         setContent {
@@ -73,7 +54,9 @@ class MainActivity : ComponentActivity() {
             val themeSetting = when (profile?.themeSetting) {
                 "DARK" -> ThemeSetting.DARK
                 "LIGHT" -> ThemeSetting.LIGHT
-                else -> ThemeSetting.SYSTEM
+                // The game art direction is intentionally the bright purple
+                // game theme, regardless of the device's system theme.
+                else -> ThemeSetting.LIGHT
             }
 
             MemoryGridTheme(themeSetting = themeSetting) {
@@ -89,7 +72,9 @@ class MainActivity : ComponentActivity() {
 fun MemoryGridApp(viewModel: MemoryGridViewModel) {
     val navController = rememberNavController()
     val navBackStackEntry by navController.currentBackStackEntryAsState()
-    val currentRoute = navBackStackEntry?.destination?.route ?: "home"
+    
+    // Mặc định khởi đầu bằng màn hình "splash" lung linh bạn vừa tạo
+    val currentRoute = navBackStackEntry?.destination?.route ?: "splash"
 
     val uiState by viewModel.uiState.collectAsState()
     val profile by viewModel.playerProfile.collectAsState()
@@ -106,96 +91,72 @@ fun MemoryGridApp(viewModel: MemoryGridViewModel) {
         BottomNavItem("settings", "Cài Đặt", Icons.Default.Settings, "bottom_nav_settings")
     )
 
-    // Hide bottom bar during active gameplay to maximize grid focus and prevent misclicks
-    val showBottomBar = currentRoute != "game"
+    val showBottomBar = currentRoute != "splash" && currentRoute != "game"
 
     Scaffold(
         modifier = Modifier.fillMaxSize(),
+
         bottomBar = {
+
             AnimatedVisibility(
                 visible = showBottomBar,
-                enter = slideInVertically(initialOffsetY = { it }),
-                exit = slideOutVertically(targetOffsetY = { it })
+                enter = slideInVertically(
+                    initialOffsetY = { it }
+                ),
+                exit = slideOutVertically(
+                    targetOffsetY = { it }
+                )
             ) {
-                NavigationBar(
-                    modifier = Modifier
-                        .shadow(12.dp)
-                        .clip(RoundedCornerShape(topStart = 20.dp, topEnd = 20.dp))
-                        .testTag("main_bottom_bar"),
-                    containerColor = MaterialTheme.colorScheme.surface,
-                    tonalElevation = 6.dp
-                ) {
-                    navItems.forEach { item ->
-                        val isSelected = currentRoute == item.route
-                        NavigationBarItem(
-                            modifier = Modifier.testTag(item.testTag),
-                            icon = {
-                                Icon(
-                                    imageVector = item.icon,
-                                    contentDescription = item.title
-                                )
-                            },
-                            label = {
-                                Text(
-                                    text = item.title,
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontSize = 11.sp,
-                                        fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal
-                                    )
-                                )
-                            },
-                            selected = isSelected,
-                            colors = NavigationBarItemDefaults.colors(
-                                selectedIconColor = ElectricCyan,
-                                selectedTextColor = ElectricCyan,
-                                indicatorColor = ElectricCyan.copy(alpha = 0.15f),
-                                unselectedIconColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f),
-                                unselectedTextColor = MaterialTheme.colorScheme.onSurfaceVariant.copy(alpha = 0.7f)
-                            ),
-                            onClick = {
-                                if (currentRoute != item.route) {
-                                    navController.navigate(item.route) {
-                                        popUpTo(navController.graph.findStartDestination().id) {
-                                            saveState = true
-                                        }
-                                        launchSingleTop = true
-                                        restoreState = true
-                                    }
+
+                CustomBottomBar(
+                    currentRoute = currentRoute,
+
+                    onNavigate = { route ->
+
+                        if (currentRoute != route) {
+
+                            navController.navigate(route) {
+
+                                popUpTo(
+                                    navController.graph.findStartDestination().id
+                                ) {
+                                    saveState = true
                                 }
+
+                                launchSingleTop = true
+
+                                restoreState = true
                             }
-                        )
+                        }
                     }
-                }
+                )
             }
         }
+
     ) { innerPadding ->
+
         NavHost(
             navController = navController,
-            startDestination = "home",
+            startDestination = "splash",
             modifier = Modifier.padding(innerPadding)
         ) {
+            composable("splash") {
+                CustomSplashScreen(onTimeout = {
+                    navController.navigate("home") {
+                        popUpTo("splash") { inclusive = true }
+                    }
+                })
+            }
+
             composable("home") {
                 HomeScreen(
                     profile = profile,
-                    onStartGame = {
-                        viewModel.startGame(GameMode.CLASSIC)
-                        navController.navigate("game")
-                    },
-                    onOpenLeaderboard = {
-                        navController.navigate("leaderboard")
-                    },
-                    onOpenDailyChallenge = {
-                        navController.navigate("daily")
-                    },
-                    onOpenStats = {
-                        navController.navigate("stats")
-                    },
-                    onOpenAchievements = {
-                        navController.navigate("achievements")
-                    },
-                    onOpenSettings = {
-                        navController.navigate("settings")
-                    }
+                    onStartGame = { viewModel.startGame(GameMode.CLASSIC); navController.navigate("game") },
+                    onOpenLeaderboard = { navController.navigate("leaderboard") },
+                    onOpenDailyChallenge = { navController.navigate("daily") },
+                    onOpenStats = { navController.navigate("stats") },
+                    onOpenAchievements = { navController.navigate("achievements") },
+                    onOpenSettings = { navController.navigate("settings") }
                 )
             }
 
@@ -208,9 +169,8 @@ fun MemoryGridApp(viewModel: MemoryGridViewModel) {
                         viewModel.exitToHome()
                         navController.popBackStack("home", inclusive = false)
                     },
-                    onPlayAgain = {
-                        viewModel.startGame(uiState.gameMode)
-                    },
+                    onPlayAgain = { viewModel.startGame(uiState.gameMode) },
+                    onRewardedContinue = { viewModel.continueCurrentLevelAfterReward() },
                     onViewLeaderboard = {
                         viewModel.exitToHome()
                         navController.navigate("leaderboard")
@@ -219,47 +179,19 @@ fun MemoryGridApp(viewModel: MemoryGridViewModel) {
             }
 
             composable("leaderboard") {
-                LeaderboardScreen(
-                    profile = profile,
-                    topScores = topScores,
-                    topLevels = topLevels,
-                    onUpdatePlayerName = { newName -> viewModel.updatePlayerName(newName) },
-                    onBack = {
-                        navController.popBackStack()
-                    }
-                )
+                LeaderboardScreen(profile, topScores, topLevels, { viewModel.updatePlayerName(it) }, { navController.popBackStack() })
             }
 
             composable("daily") {
-                DailyChallengeScreen(
-                    profile = profile,
-                    onStartDaily = {
-                        viewModel.startGame(GameMode.DAILY)
-                        navController.navigate("game")
-                    },
-                    onBack = {
-                        navController.popBackStack()
-                    }
-                )
+                DailyChallengeScreen(profile, { viewModel.startGame(GameMode.DAILY); navController.navigate("game") }, { navController.popBackStack() })
             }
 
             composable("stats") {
-                StatisticsScreen(
-                    profile = profile,
-                    recentGames = recentGames,
-                    onBack = {
-                        navController.popBackStack()
-                    }
-                )
+                StatisticsScreen(profile, recentGames, { navController.popBackStack() })
             }
 
             composable("achievements") {
-                AchievementsScreen(
-                    achievements = achievements,
-                    onBack = {
-                        navController.popBackStack()
-                    }
-                )
+                AchievementsScreen(achievements, { navController.popBackStack() })
             }
 
             composable("settings") {
@@ -269,11 +201,11 @@ fun MemoryGridApp(viewModel: MemoryGridViewModel) {
                     onToggleHaptics = { viewModel.toggleHaptics() },
                     onSetTheme = { themeKey -> viewModel.setThemeSetting(themeKey) },
                     onResetData = { viewModel.resetAllData() },
-                    onBack = {
-                        navController.popBackStack()
-                    }
+                    onBack = { navController.popBackStack() }
                 )
             }
         }
     }
 }
+
+data class BottomNavItem(val route: String, val title: String, val icon: ImageVector, val testTag: String)

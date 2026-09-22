@@ -1,5 +1,6 @@
 package com.example.ui.screens
 
+import android.net.wifi.hotspot2.pps.HomeSp
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
@@ -45,6 +46,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.local.PlayerProfileEntity
@@ -515,5 +517,32 @@ fun HomeScreen(
                 }
             }
         }
+    }
+}
+
+@Preview(
+    showBackground = true,
+    showSystemUi = true,
+    name = "HomeScreen Preview"
+)
+@Composable
+fun HomeScreenPreview() {
+    MaterialTheme {
+        HomeScreen(
+            profile = PlayerProfileEntity(
+                id = 1,
+                currentXp = 1250,
+                currentStreak = 5,
+                bestScore = 18500,
+                bestLevel = 12,
+                lastDailyChallengeDate = ""
+            ),
+            onStartGame = {},
+            onOpenLeaderboard = {},
+            onOpenDailyChallenge = {},
+            onOpenStats = {},
+            onOpenAchievements = {},
+            onOpenSettings = {}
+        )
     }
 }

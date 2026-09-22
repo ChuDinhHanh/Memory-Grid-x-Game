@@ -27,12 +27,12 @@ class ExampleRobolectricTest {
     @Test
     fun `difficulty engine scales correctly`() {
         val lvl1 = DifficultyEngine.calculateDifficulty(1, GameMode.CLASSIC)
-        assertEquals(3, lvl1.gridSize)
+        assertEquals(4, lvl1.gridSize)
         assertEquals(3, lvl1.cellsToRemember)
 
         val lvl5 = DifficultyEngine.calculateDifficulty(5, GameMode.CLASSIC)
-        assertEquals(4, lvl5.gridSize)
-        assertEquals(6, lvl5.cellsToRemember)
+        assertEquals(5, lvl5.gridSize)
+        assertEquals(10, lvl5.cellsToRemember)
     }
 
     @Test
