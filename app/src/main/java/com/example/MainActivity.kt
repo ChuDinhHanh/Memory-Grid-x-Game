@@ -28,6 +28,7 @@ import androidx.navigation.compose.composable
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import com.example.data.model.GameMode
+import com.example.engine.RewardedAdManager
 import com.example.ui.components.CustomBottomBar
 import com.example.ui.screens.AchievementsScreen
 import com.example.ui.screens.CustomSplashScreen
@@ -43,9 +44,12 @@ import com.example.ui.viewmodel.MemoryGridViewModel
 
 
 class MainActivity : ComponentActivity() {
+    private lateinit var rewardedAdManager: RewardedAdManager
+
     override fun onCreate(savedInstanceState: Bundle?) {
         // ĐÃ GỠ BỎ installSplashScreen() ĐỂ BỎ SPLASH CŨ CỦA HỆ THỐNG
         super.onCreate(savedInstanceState)
+        rewardedAdManager = RewardedAdManager(this).also { it.initializeAndLoad() }
         enableEdgeToEdge()
         setContent {
             val viewModel: MemoryGridViewModel = viewModel()
@@ -170,7 +174,9 @@ fun MemoryGridApp(viewModel: MemoryGridViewModel) {
                         navController.popBackStack("home", inclusive = false)
                     },
                     onPlayAgain = { viewModel.startGame(uiState.gameMode) },
-                    onRewardedContinue = { viewModel.continueCurrentLevelAfterReward() },
+                    onRewardedContinue = {
+                        rewardedAdManager.show { viewModel.continueCurrentLevelAfterReward() }
+                    },
                     onViewLeaderboard = {
                         viewModel.exitToHome()
                         navController.navigate("leaderboard")

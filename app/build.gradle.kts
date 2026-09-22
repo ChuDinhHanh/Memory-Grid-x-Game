@@ -97,6 +97,7 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.retrofit)
     implementation(libs.androidx.compose.runtime)
+    implementation("com.google.android.gms:play-services-ads:25.5.0")
 
     testImplementation(libs.androidx.compose.ui.test.junit4)
     testImplementation(libs.androidx.core)
