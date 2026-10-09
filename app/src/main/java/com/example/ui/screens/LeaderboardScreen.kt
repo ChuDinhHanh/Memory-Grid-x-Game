@@ -1,54 +1,41 @@
 package com.example.ui.screens
 
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Edit
-import androidx.compose.material.icons.filled.EmojiEvents
 import androidx.compose.material.icons.filled.Leaderboard
 import androidx.compose.material.icons.filled.MilitaryTech
 import androidx.compose.material.icons.filled.Person
-import androidx.compose.material.icons.filled.Stars
-import androidx.compose.material.icons.filled.Whatshot
 import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Surface
-import androidx.compose.material3.Tab
-import androidx.compose.material3.TabRow
-import androidx.compose.material3.TabRowDefaults
-import androidx.compose.material3.TabRowDefaults.tabIndicatorOffset
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
@@ -58,58 +45,101 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.data.local.GameHistoryEntity
 import com.example.data.local.PlayerProfileEntity
-import com.example.ui.theme.AmberWarning
 import com.example.ui.theme.ElectricCyan
 import com.example.ui.theme.GoldStar
-import com.example.ui.theme.MintSuccess
-import com.example.ui.theme.VividViolet
-import java.text.SimpleDateFormat
-import java.util.Date
-import java.util.Locale
+
+// Same glass recipe as AchievementsScreen: white 15% -> 5% fill, white 28% -> 8% border.
+// `tint` lets a card pick up a subtle accent (current player, #1) without changing the look.
+@Composable
+private fun LiquidGlassCard(
+    modifier: Modifier = Modifier,
+    shape: RoundedCornerShape = RoundedCornerShape(18.dp),
+    tint: Color = Color.White,
+    content: @Composable () -> Unit
+) {
+    val isTinted = tint != Color.White
+    Box(
+        modifier = modifier
+            .clip(shape)
+            .background(
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        if (isTinted) tint.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.15f),
+                        if (isTinted) tint.copy(alpha = 0.06f) else Color.White.copy(alpha = 0.05f)
+                    )
+                )
+            )
+            .border(
+                width = 1.dp,
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        if (isTinted) tint.copy(alpha = 0.45f) else Color.White.copy(alpha = 0.28f),
+                        if (isTinted) tint.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.08f)
+                    )
+                ),
+                shape = shape
+            )
+    ) {
+        content()
+    }
+}
 
 @Composable
 fun LeaderboardScreen(
     profile: PlayerProfileEntity?,
     topScores: List<GameHistoryEntity>,
-    topLevels: List<GameHistoryEntity>,
     onUpdatePlayerName: (String) -> Unit,
-    onBack: () -> Unit,
     modifier: Modifier = Modifier
 ) {
-    var selectedTab by remember { mutableIntStateOf(0) }
     var showNameDialog by remember { mutableStateOf(false) }
-    var editNameText by remember { mutableStateOf(profile?.playerName ?: "Người chơi") }
-
-    val displayedList = if (selectedTab == 0) topScores else topLevels
-    val currentPlayerName = profile?.playerName ?: "Người chơi"
+    val defaultName = stringResource(id = R.string.leaderboard_default_player_name)
+    val currentPlayerName = profile?.playerName.takeUnless { it.isNullOrBlank() } ?: defaultName
+    var editNameText by remember { mutableStateOf(currentPlayerName) }
 
     if (showNameDialog) {
         AlertDialog(
             onDismissRequest = { showNameDialog = false },
+            containerColor = Color(0xFF1A1F4D),
+            shape = RoundedCornerShape(24.dp),
             title = {
                 Text(
-                    text = "Đổi tên hiển thị",
-                    style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
+                    text = stringResource(id = R.string.leaderboard_dialog_edit_title),
+                    fontSize = 18.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White
                 )
             },
             text = {
-                Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                     Text(
-                        text = "Tên này sẽ xuất hiện trên bảng xếp hạng kỷ lục:",
-                        style = MaterialTheme.typography.bodySmall.copy(color = MaterialTheme.colorScheme.onSurfaceVariant)
+                        text = stringResource(id = R.string.leaderboard_dialog_edit_subtitle),
+                        fontSize = 12.sp,
+                        color = Color.White.copy(alpha = 0.65f)
                     )
                     OutlinedTextField(
                         value = editNameText,
                         onValueChange = { if (it.length <= 20) editNameText = it },
                         singleLine = true,
-                        label = { Text("Tên của bạn") },
+                        shape = RoundedCornerShape(14.dp),
+                        label = { Text(stringResource(id = R.string.leaderboard_dialog_name_label)) },
+                        colors = OutlinedTextFieldDefaults.colors(
+                            focusedTextColor = Color.White,
+                            unfocusedTextColor = Color.White,
+                            focusedBorderColor = ElectricCyan,
+                            unfocusedBorderColor = Color.White.copy(alpha = 0.25f),
+                            focusedLabelColor = ElectricCyan,
+                            unfocusedLabelColor = Color.White.copy(alpha = 0.6f),
+                            cursorColor = ElectricCyan
+                        ),
                         modifier = Modifier
                             .fillMaxWidth()
                             .testTag("player_name_input")
@@ -120,129 +150,114 @@ fun LeaderboardScreen(
                 TextButton(
                     onClick = {
                         val trimmed = editNameText.trim()
-                        if (trimmed.isNotEmpty()) {
-                            onUpdatePlayerName(trimmed)
-                        }
+                        if (trimmed.isNotEmpty()) onUpdatePlayerName(trimmed)
                         showNameDialog = false
                     },
                     modifier = Modifier.testTag("confirm_name_button")
                 ) {
-                    Text("Lưu tên")
+                    Text(
+                        text = stringResource(id = R.string.leaderboard_dialog_save),
+                        color = ElectricCyan,
+                        fontWeight = FontWeight.Bold
+                    )
                 }
             },
             dismissButton = {
                 TextButton(onClick = { showNameDialog = false }) {
-                    Text("Hủy")
+                    Text(
+                        text = stringResource(id = R.string.leaderboard_dialog_cancel),
+                        color = Color.White.copy(alpha = 0.65f)
+                    )
                 }
             }
         )
     }
 
+    // Transparent so the app-wide background shows through, exactly like AchievementsScreen.
     Scaffold(
         modifier = modifier.fillMaxSize(),
-        containerColor = MaterialTheme.colorScheme.background,
-        topBar = {
-            Surface(
-                color = MaterialTheme.colorScheme.surface,
-                tonalElevation = 3.dp
-            ) {
-                Row(
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .padding(horizontal = 16.dp, vertical = 12.dp),
-                    verticalAlignment = Alignment.CenterVertically
-                ) {
-                    IconButton(
-                        onClick = onBack,
-                        modifier = Modifier
-                            .size(40.dp)
-                            .testTag("leaderboard_back_button")
-                    ) {
-                        Icon(
-                            imageVector = Icons.AutoMirrored.Filled.ArrowBack,
-                            contentDescription = "Quay lại",
-                            tint = MaterialTheme.colorScheme.onSurface
-                        )
-                    }
-
-                    Spacer(modifier = Modifier.width(8.dp))
-
-                    Text(
-                        text = "Bảng Xếp Hạng",
-                        style = MaterialTheme.typography.titleLarge.copy(
-                            fontWeight = FontWeight.ExtraBold,
-                            color = MaterialTheme.colorScheme.onSurface
-                        )
-                    )
-
-                    Spacer(modifier = Modifier.weight(1f))
-
-                    Icon(
-                        imageVector = Icons.Default.Leaderboard,
-                        contentDescription = null,
-                        tint = GoldStar,
-                        modifier = Modifier.size(28.dp)
-                    )
-                }
-            }
-        }
+        containerColor = Color.Transparent,
+        contentWindowInsets = WindowInsets.statusBars
     ) { innerPadding ->
-        LazyColumn(
+
+        Column(
             modifier = Modifier
                 .fillMaxSize()
-                .padding(innerPadding),
-            contentPadding = PaddingValues(horizontal = 16.dp, vertical = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(14.dp)
+                .padding(innerPadding)
+                .navigationBarsPadding()
+                .padding(horizontal = 16.dp)
         ) {
-            // Player Profile Bar with Edit Name Button
-            item {
-                Card(
-                    modifier = Modifier.fillMaxWidth(),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(
-                        containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.5f)
-                    ),
-                    border = androidx.compose.foundation.BorderStroke(
-                        1.dp,
-                        MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.5f)
-                    )
-                ) {
-                    Row(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(16.dp),
-                        verticalAlignment = Alignment.CenterVertically,
-                        horizontalArrangement = Arrangement.SpaceBetween
-                    ) {
+
+            // HEADER
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(top = 12.dp, bottom = 16.dp),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = stringResource(id = R.string.leaderboard_title),
+                    modifier = Modifier.weight(1f),
+                    fontSize = 24.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = Color.White,
+                    letterSpacing = (-0.5).sp
+                )
+                Icon(
+                    imageVector = Icons.Default.Leaderboard,
+                    contentDescription = null,
+                    tint = GoldStar,
+                    modifier = Modifier.size(26.dp)
+                )
+            }
+
+            LazyColumn(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .weight(1f),
+                contentPadding = PaddingValues(top = 2.dp, bottom = 120.dp),
+                verticalArrangement = Arrangement.spacedBy(10.dp)
+            ) {
+
+                // PROFILE CARD
+                item {
+                    LiquidGlassCard(modifier = Modifier.fillMaxWidth()) {
                         Row(
-                            verticalAlignment = Alignment.CenterVertically,
-                            horizontalArrangement = Arrangement.spacedBy(12.dp)
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(horizontal = 14.dp, vertical = 14.dp),
+                            verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(
                                 modifier = Modifier
                                     .size(48.dp)
-                                    .clip(CircleShape)
-                                    .background(
-                                        Brush.linearGradient(listOf(ElectricCyan, VividViolet))
+                                    .clip(RoundedCornerShape(14.dp))
+                                    .background(ElectricCyan.copy(alpha = 0.16f))
+                                    .border(
+                                        width = 1.dp,
+                                        color = ElectricCyan.copy(alpha = 0.35f),
+                                        shape = RoundedCornerShape(14.dp)
                                     ),
                                 contentAlignment = Alignment.Center
                             ) {
                                 Icon(
                                     imageVector = Icons.Default.Person,
                                     contentDescription = null,
-                                    tint = Color.White,
-                                    modifier = Modifier.size(28.dp)
+                                    tint = ElectricCyan,
+                                    modifier = Modifier.size(26.dp)
                                 )
                             }
 
-                            Column {
+                            Spacer(modifier = Modifier.width(12.dp))
+
+                            Column(modifier = Modifier.weight(1f)) {
                                 Row(verticalAlignment = Alignment.CenterVertically) {
                                     Text(
                                         text = currentPlayerName,
-                                        style = MaterialTheme.typography.titleMedium.copy(
-                                            fontWeight = FontWeight.Bold,
-                                            color = MaterialTheme.colorScheme.onSurface
-                                        ),
+                                        modifier = Modifier.weight(1f, fill = false),
+                                        fontSize = 16.sp,
+                                        fontWeight = FontWeight.Bold,
+                                        color = Color.White,
                                         maxLines = 1,
                                         overflow = TextOverflow.Ellipsis
                                     )
@@ -252,34 +267,38 @@ fun LeaderboardScreen(
                                             showNameDialog = true
                                         },
                                         modifier = Modifier
-                                            .size(28.dp)
                                             .padding(start = 4.dp)
+                                            .size(28.dp)
                                             .testTag("edit_player_name_button")
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Edit,
-                                            contentDescription = "Sửa tên",
-                                            tint = MaterialTheme.colorScheme.primary,
+                                            contentDescription = stringResource(id = R.string.leaderboard_edit_name_desc),
+                                            tint = Color.White.copy(alpha = 0.7f),
                                             modifier = Modifier.size(16.dp)
                                         )
                                     }
                                 }
+                                Spacer(modifier = Modifier.height(3.dp))
                                 Text(
-                                    text = "Kỷ lục: %,d đ • Cấp %d".format(profile?.bestScore ?: 0, profile?.bestLevel ?: 1),
-                                    style = MaterialTheme.typography.bodySmall.copy(
-                                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                                    )
+                                    text = stringResource(
+                                        id = R.string.leaderboard_personal_best_format,
+                                        profile?.bestScore ?: 0
+                                    ),
+                                    fontSize = 12.sp,
+                                    color = Color.White.copy(alpha = 0.65f)
                                 )
                             }
-                        }
 
-                        Surface(
-                            shape = RoundedCornerShape(12.dp),
-                            color = GoldStar.copy(alpha = 0.15f),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, GoldStar.copy(alpha = 0.4f))
-                        ) {
+                            Spacer(modifier = Modifier.width(8.dp))
+
+                            // Top-player badge
                             Row(
-                                modifier = Modifier.padding(horizontal = 10.dp, vertical = 6.dp),
+                                modifier = Modifier
+                                    .clip(RoundedCornerShape(10.dp))
+                                    .background(GoldStar.copy(alpha = 0.16f))
+                                    .border(1.dp, GoldStar.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
+                                    .padding(horizontal = 8.dp, vertical = 5.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                                 horizontalArrangement = Arrangement.spacedBy(4.dp)
                             ) {
@@ -287,275 +306,67 @@ fun LeaderboardScreen(
                                     imageVector = Icons.Default.MilitaryTech,
                                     contentDescription = null,
                                     tint = GoldStar,
-                                    modifier = Modifier.size(16.dp)
+                                    modifier = Modifier.size(15.dp)
                                 )
                                 Text(
-                                    text = "Top Player",
-                                    style = MaterialTheme.typography.labelSmall.copy(
-                                        fontWeight = FontWeight.Bold,
-                                        color = GoldStar
-                                    )
+                                    text = stringResource(id = R.string.leaderboard_top_player_badge),
+                                    fontSize = 10.sp,
+                                    fontWeight = FontWeight.Bold,
+                                    color = GoldStar
                                 )
                             }
                         }
                     }
                 }
-            }
 
-            // Tab Switcher
-            item {
-                TabRow(
-                    selectedTabIndex = selectedTab,
-                    containerColor = Color.Transparent,
-                    contentColor = MaterialTheme.colorScheme.primary,
-                    indicator = { tabPositions ->
-                        TabRowDefaults.SecondaryIndicator(
-                            Modifier.tabIndicatorOffset(tabPositions[selectedTab]),
-                            color = ElectricCyan,
-                            height = 3.dp
-                        )
-                    }
-                ) {
-                    Tab(
-                        selected = selectedTab == 0,
-                        onClick = { selectedTab = 0 },
-                        text = {
-                            Text(
-                                text = "🏆 Điểm Cao Nhất",
-                                style = MaterialTheme.typography.titleSmall.copy(
-                                    fontWeight = if (selectedTab == 0) FontWeight.Bold else FontWeight.Medium
-                                )
-                            )
-                        },
-                        modifier = Modifier.testTag("tab_top_scores")
-                    )
-                    Tab(
-                        selected = selectedTab == 1,
-                        onClick = { selectedTab = 1 },
-                        text = {
-                            Text(
-                                text = "⭐ Cấp Độ Đạt Được",
-                                style = MaterialTheme.typography.titleSmall.copy(
-                                    fontWeight = if (selectedTab == 1) FontWeight.Bold else FontWeight.Medium
-                                )
-                            )
-                        },
-                        modifier = Modifier.testTag("tab_top_levels")
+                // SECTION TITLE
+                item {
+                    Text(
+                        text = stringResource(id = R.string.leaderboard_section_title),
+                        fontSize = 15.sp,
+                        fontWeight = FontWeight.SemiBold,
+                        color = Color.White.copy(alpha = 0.9f),
+                        modifier = Modifier.padding(start = 2.dp, top = 8.dp, bottom = 2.dp)
                     )
                 }
-            }
 
-            // Top 3 Podium
-            if (displayedList.isNotEmpty()) {
-                item {
-                    LeaderboardPodium(
-                        items = displayedList.take(3),
-                        isScoreTab = selectedTab == 0,
-                        currentPlayerName = currentPlayerName
-                    )
-                }
-            }
-
-            // Section Header
-            item {
-                Text(
-                    text = "Bảng Xếp Hạng Chi Tiết",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    ),
-                    modifier = Modifier.padding(top = 6.dp)
-                )
-            }
-
-            if (displayedList.isEmpty()) {
-                item {
-                    Card(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(vertical = 24.dp),
-                        shape = RoundedCornerShape(16.dp),
-                        colors = CardDefaults.cardColors(
-                            containerColor = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.3f)
-                        )
-                    ) {
-                        Column(
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .padding(32.dp),
-                            horizontalAlignment = Alignment.CenterHorizontally,
-                            verticalArrangement = Arrangement.spacedBy(8.dp)
-                        ) {
-                            Text(text = "🎮", fontSize = 40.sp)
-                            Text(
-                                text = "Chưa có lượt chơi nào",
-                                style = MaterialTheme.typography.titleMedium.copy(fontWeight = FontWeight.Bold)
-                            )
-                            Text(
-                                text = "Hãy bắt đầu chơi Thang Độ Khó để ghi danh vào bảng vàng!",
-                                style = MaterialTheme.typography.bodySmall.copy(
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                                    textAlign = TextAlign.Center
+                // LIST / EMPTY
+                if (topScores.isEmpty()) {
+                    item {
+                        LiquidGlassCard(modifier = Modifier.fillMaxWidth()) {
+                            Column(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .padding(horizontal = 24.dp, vertical = 32.dp),
+                                horizontalAlignment = Alignment.CenterHorizontally,
+                                verticalArrangement = Arrangement.spacedBy(8.dp)
+                            ) {
+                                Text(text = "🏆", fontSize = 38.sp)
+                                Text(
+                                    text = stringResource(id = R.string.leaderboard_empty_title),
+                                    fontSize = 15.sp,
+                                    fontWeight = FontWeight.SemiBold,
+                                    color = Color.White
                                 )
-                            )
+                                Text(
+                                    text = stringResource(id = R.string.leaderboard_empty_subtitle),
+                                    fontSize = 12.sp,
+                                    lineHeight = 17.sp,
+                                    textAlign = TextAlign.Center,
+                                    color = Color.White.copy(alpha = 0.65f)
+                                )
+                            }
                         }
                     }
-                }
-            } else {
-                itemsIndexed(displayedList) { index, record ->
-                    LeaderboardRow(
-                        rank = index + 1,
-                        record = record,
-                        isScoreTab = selectedTab == 0,
-                        isCurrentPlayer = record.playerName == currentPlayerName
-                    )
-                }
-            }
-        }
-    }
-}
-
-@Composable
-fun LeaderboardPodium(
-    items: List<GameHistoryEntity>,
-    isScoreTab: Boolean,
-    currentPlayerName: String,
-    modifier: Modifier = Modifier
-) {
-    // Standard podium ordering: 2nd place (left), 1st place (center), 3rd place (right)
-    val first = items.getOrNull(0)
-    val second = items.getOrNull(1)
-    val third = items.getOrNull(2)
-
-    Row(
-        modifier = modifier
-            .fillMaxWidth()
-            .padding(vertical = 12.dp),
-        horizontalArrangement = Arrangement.spacedBy(10.dp),
-        verticalAlignment = Alignment.Bottom
-    ) {
-        // 2nd Place (Silver)
-        PodiumCol(
-            rank = 2,
-            record = second,
-            pedestalHeight = 110.dp,
-            badgeColor = Color(0xFFC0C0C0),
-            isScoreTab = isScoreTab,
-            isCurrentPlayer = second?.playerName == currentPlayerName,
-            modifier = Modifier.weight(1f)
-        )
-
-        // 1st Place (Gold)
-        PodiumCol(
-            rank = 1,
-            record = first,
-            pedestalHeight = 140.dp,
-            badgeColor = GoldStar,
-            isScoreTab = isScoreTab,
-            isCurrentPlayer = first?.playerName == currentPlayerName,
-            modifier = Modifier.weight(1.15f)
-        )
-
-        // 3rd Place (Bronze)
-        PodiumCol(
-            rank = 3,
-            record = third,
-            pedestalHeight = 90.dp,
-            badgeColor = Color(0xFFCD7F32),
-            isScoreTab = isScoreTab,
-            isCurrentPlayer = third?.playerName == currentPlayerName,
-            modifier = Modifier.weight(1f)
-        )
-    }
-}
-
-@Composable
-fun PodiumCol(
-    rank: Int,
-    record: GameHistoryEntity?,
-    pedestalHeight: androidx.compose.ui.unit.Dp,
-    badgeColor: Color,
-    isScoreTab: Boolean,
-    isCurrentPlayer: Boolean,
-    modifier: Modifier = Modifier
-) {
-    Column(
-        modifier = modifier,
-        horizontalAlignment = Alignment.CenterHorizontally
-    ) {
-        if (record != null) {
-            // Crown or Medal for rank
-            Text(
-                text = when (rank) {
-                    1 -> "👑"
-                    2 -> "🥈"
-                    else -> "🥉"
-                },
-                fontSize = if (rank == 1) 28.sp else 22.sp
-            )
-
-            Spacer(modifier = Modifier.height(4.dp))
-
-            Text(
-                text = record.playerName,
-                style = MaterialTheme.typography.bodySmall.copy(
-                    fontWeight = if (isCurrentPlayer) FontWeight.Black else FontWeight.Bold,
-                    color = if (isCurrentPlayer) ElectricCyan else MaterialTheme.colorScheme.onSurface
-                ),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-                textAlign = TextAlign.Center
-            )
-
-            Text(
-                text = if (isScoreTab) "%,d đ".format(record.score) else "Cấp ${record.levelReached}",
-                style = MaterialTheme.typography.labelMedium.copy(
-                    fontWeight = FontWeight.ExtraBold,
-                    color = badgeColor
-                ),
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis
-            )
-
-            Spacer(modifier = Modifier.height(6.dp))
-        } else {
-            Spacer(modifier = Modifier.height(40.dp))
-        }
-
-        // Pedestal block
-        Surface(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(pedestalHeight),
-            shape = RoundedCornerShape(topStart = 16.dp, topEnd = 16.dp),
-            color = MaterialTheme.colorScheme.surfaceVariant.copy(alpha = if (rank == 1) 0.85f else 0.5f),
-            border = androidx.compose.foundation.BorderStroke(
-                1.5.dp,
-                badgeColor.copy(alpha = if (rank == 1) 0.8f else 0.4f)
-            )
-        ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxSize()
-                    .padding(8.dp),
-                horizontalAlignment = Alignment.CenterHorizontally,
-                verticalArrangement = Arrangement.Center
-            ) {
-                Text(
-                    text = "#$rank",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.Black,
-                        color = badgeColor,
-                        fontSize = if (rank == 1) 28.sp else 22.sp
-                    )
-                )
-                if (record != null) {
-                    Text(
-                        text = if (isScoreTab) "Cấp ${record.levelReached}" else "%,d đ".format(record.score),
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant
+                } else {
+                    itemsIndexed(topScores) { index, record ->
+                        SimpleLeaderboardRow(
+                            rank = index + 1,
+                            playerName = record.playerName,
+                            score = record.score,
+                            isCurrentPlayer = record.playerName == currentPlayerName
                         )
-                    )
+                    }
                 }
             }
         }
@@ -563,133 +374,100 @@ fun PodiumCol(
 }
 
 @Composable
-fun LeaderboardRow(
+private fun SimpleLeaderboardRow(
     rank: Int,
-    record: GameHistoryEntity,
-    isScoreTab: Boolean,
+    playerName: String,
+    score: Int,
     isCurrentPlayer: Boolean,
     modifier: Modifier = Modifier
 ) {
-    val rankBadgeColor = when (rank) {
+    val medalColor: Color? = when (rank) {
         1 -> GoldStar
         2 -> Color(0xFFC0C0C0)
         3 -> Color(0xFFCD7F32)
-        else -> MaterialTheme.colorScheme.outlineVariant
+        else -> null
     }
 
-    val dateFormatter = remember { SimpleDateFormat("dd/MM/yyyy", Locale.getDefault()) }
-    val dateString = remember(record.timestamp) { dateFormatter.format(Date(record.timestamp)) }
-
-    Card(
+    LiquidGlassCard(
         modifier = modifier
             .fillMaxWidth()
             .testTag("leaderboard_row_$rank"),
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(
-            containerColor = if (isCurrentPlayer) {
-                ElectricCyan.copy(alpha = 0.12f)
-            } else {
-                MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.35f)
-            }
-        ),
-        border = androidx.compose.foundation.BorderStroke(
-            1.dp,
-            if (isCurrentPlayer) ElectricCyan.copy(alpha = 0.6f) else MaterialTheme.colorScheme.outlineVariant.copy(alpha = 0.3f)
-        )
+        tint = if (isCurrentPlayer) ElectricCyan else Color.White
     ) {
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 14.dp, vertical = 12.dp),
+                .padding(horizontal = 13.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Rank Badge
+            // Rank badge: same icon-tile treatment as achievement icons
             Box(
                 modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
+                    .size(40.dp)
+                    .clip(RoundedCornerShape(12.dp))
                     .background(
-                        if (rank <= 3) rankBadgeColor.copy(alpha = 0.2f) else MaterialTheme.colorScheme.surfaceVariant
+                        medalColor?.copy(alpha = 0.17f) ?: Color.White.copy(alpha = 0.07f)
+                    )
+                    .border(
+                        width = 1.dp,
+                        color = medalColor?.copy(alpha = 0.40f) ?: Color.White.copy(alpha = 0.08f),
+                        shape = RoundedCornerShape(12.dp)
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "$rank",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Black,
-                        color = if (rank <= 3) rankBadgeColor else MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = medalColor ?: Color.White.copy(alpha = 0.7f)
                 )
             }
 
             Spacer(modifier = Modifier.width(12.dp))
 
-            // Player Info & Date
-            Column(modifier = Modifier.weight(1f)) {
-                Row(verticalAlignment = Alignment.CenterVertically) {
+            Row(
+                modifier = Modifier.weight(1f),
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+                Text(
+                    text = playerName,
+                    modifier = Modifier.weight(1f, fill = false),
+                    fontSize = 14.sp,
+                    fontWeight = FontWeight.SemiBold,
+                    color = Color.White,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis
+                )
+                if (isCurrentPlayer) {
                     Text(
-                        text = record.playerName,
-                        style = MaterialTheme.typography.titleSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = if (isCurrentPlayer) ElectricCyan else MaterialTheme.colorScheme.onSurface
-                        ),
-                        maxLines = 1,
-                        overflow = TextOverflow.Ellipsis
-                    )
-                    if (isCurrentPlayer) {
-                        Surface(
-                            shape = RoundedCornerShape(6.dp),
-                            color = ElectricCyan.copy(alpha = 0.2f),
-                            modifier = Modifier.padding(start = 6.dp)
-                        ) {
-                            Text(
-                                text = "BẠN",
-                                style = MaterialTheme.typography.labelSmall.copy(
-                                    fontWeight = FontWeight.Black,
-                                    color = ElectricCyan,
-                                    fontSize = 9.sp
-                                ),
-                                modifier = Modifier.padding(horizontal = 5.dp, vertical = 1.dp)
-                            )
-                        }
-                    }
-                }
-
-                Row(
-                    verticalAlignment = Alignment.CenterVertically,
-                    horizontalArrangement = Arrangement.spacedBy(8.dp)
-                ) {
-                    Text(
-                        text = "Cấp ${record.levelReached} • Độ chính xác ${record.accuracy}%",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            fontSize = 11.sp
-                        )
-                    )
-                    Text(
-                        text = "• $dateString",
-                        style = MaterialTheme.typography.bodySmall.copy(
-                            color = MaterialTheme.colorScheme.outline,
-                            fontSize = 11.sp
-                        )
+                        text = stringResource(id = R.string.leaderboard_you_tag),
+                        modifier = Modifier
+                            .padding(start = 8.dp)
+                            .clip(RoundedCornerShape(6.dp))
+                            .background(ElectricCyan.copy(alpha = 0.20f))
+                            .padding(horizontal = 6.dp, vertical = 2.dp),
+                        fontSize = 9.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = ElectricCyan
                     )
                 }
             }
 
-            // Score / Level Display
-            Column(horizontalAlignment = Alignment.End) {
+            Row(
+                verticalAlignment = Alignment.Bottom,
+                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            ) {
                 Text(
-                    text = if (isScoreTab) "%,d".format(record.score) else "Cấp ${record.levelReached}",
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.Black,
-                        color = if (isScoreTab) GoldStar else MintSuccess
-                    )
+                    text = "%,d".format(score),
+                    fontSize = 16.sp,
+                    fontWeight = FontWeight.Bold,
+                    color = GoldStar
                 )
                 Text(
-                    text = if (isScoreTab) "điểm" else "%,d đ".format(record.score),
-                    style = MaterialTheme.typography.labelSmall.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
+                    text = stringResource(id = R.string.leaderboard_pts_suffix),
+                    modifier = Modifier.padding(bottom = 2.dp),
+                    fontSize = 10.sp,
+                    color = Color.White.copy(alpha = 0.55f)
                 )
             }
         }

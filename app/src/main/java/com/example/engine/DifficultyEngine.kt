@@ -1,3 +1,4 @@
+
 package com.example.engine
 
 import com.example.data.model.DifficultyConfig
@@ -8,8 +9,9 @@ object DifficultyEngine {
     /**
      * Calculates difficulty configuration for a given level and mode.
      * Specification rules:
-     * Level 1-4: 4x4 free recall, 3 to 6 cells
-     * Level 5-10: 5x5 ordered recall, 10 to 18 cells
+     * Level 1-2: 3x3 free recall, 3 to 4 cells
+     * Level 3-6: 4x4 ordered recall, 5 to 8 cells
+     * Level 7-12: 5x5 ordered recall, growing cell count
      * Later levels: boards grow to 6x6, 7x7, then 8x8 while the
      * sequence and reveal speed continue to scale without a hard level cap.
      */
@@ -23,13 +25,15 @@ object DifficultyEngine {
             )
         }
 
-        // Endless progression. Early rounds are a forgiving 4x4 free-recall
-        // game; later rounds grow the board and require the shown order.
+        // Endless progression. The very first rounds are a forgiving 3x3
+        // free-recall game so new players start on the smallest possible
+        // board; later rounds grow the grid and require the shown order.
         val gridSize = when {
-            level <= 4 -> 4
-            level <= 10 -> 5
-            level <= 18 -> 6
-            level <= 28 -> 7
+            level <= 2 -> 3
+            level <= 6 -> 4
+            level <= 12 -> 5
+            level <= 20 -> 6
+            level <= 30 -> 7
             else -> 8
         }
 
@@ -38,16 +42,19 @@ object DifficultyEngine {
             level == 2 -> 4
             level == 3 -> 5
             level == 4 -> 6
-            level <= 6 -> 5 + level
-            level <= 10 -> 8 + level
-            else -> minOf(gridSize * gridSize - 4, 18 + (level - 11) * 2)
+            level == 5 -> 7
+            level == 6 -> 8
+            level <= 12 -> 6 + level
+            level <= 20 -> 12 + (level - 12) * 2
+            else -> minOf(gridSize * gridSize - 4, 20 + (level - 20) * 2)
         }
 
         val baseTime = when {
-            level <= 4 -> 2200L
-            level <= 10 -> 1800L
-            level <= 18 -> 1450L
-            else -> 1150L
+            level <= 2 -> 2400L
+            level <= 6 -> 2000L
+            level <= 12 -> 1600L
+            level <= 20 -> 1300L
+            else -> 1050L
         }
 
         return DifficultyConfig(

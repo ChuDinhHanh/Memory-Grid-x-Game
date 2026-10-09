@@ -47,8 +47,6 @@ fun CustomProgressBar(
             .fillMaxWidth()
             .height(height)
     ) {
-        // Tính khoảng cách tối đa mà rocket có thể di chuyển trong lòng khung
-        // Giúp rocket dừng lại chính xác ở mép phải khi progress = 1.0f
         val maxTravelDistance = maxWidth - iconSize
         val iconOffsetX = maxTravelDistance * animatedProgress
 

@@ -1,0 +1,250 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Dialog stop -->
+    <string name="stop_game_title">STOP GAME</string>
+    <string name="stop_game_message">Are you sure you want to stop the game? Your progress will not be saved.</string>
+    <string name="stop_game_cancel">Continue</string>
+    <string name="stop_game_confirm">Stop Game</string>
+
+    <!-- Game Header Content Descriptions -->
+    <string name="cd_exit_game">Exit game</string>
+    <string name="cd_settings">Settings</string>
+    <string name="cd_coin">Coin</string>
+    <string name="cd_completed">Completed</string>
+
+    <!-- Game Header Texts & Formats -->
+    <string name="game_combo">🔥 Combo %1$d</string>
+    <string name="game_round_score_earned">+%1$d</string>
+    <string name="game_progress_format">%1$d / %2$d</string>
+
+    <!-- Game Phase Instructions -->
+    <string name="game_phase_get_ready">Get Ready</string>
+    <string name="game_phase_memorize_sequence">Memorize Order</string>
+    <string name="game_phase_memorize">Memorize</string>
+
+    <string name="game_phase_recall_sequence">SEQUENCE</string>
+    <string name="game_phase_recall_select">SELECT TILES</string>
+    <string name="game_phase_evaluating">Checking…</string>
+    <string name="game_phase_try_again">Try Again</string>
+
+    <string name="game_level_format">LEVEL %1$02d</string>
+
+
+    <!-- Game Over Screen -->
+    <string name="game_over_reward">REWARD</string>
+    <string name="game_over_stat_level">LEVEL</string>
+    <string name="game_over_stat_accuracy">ACCURACY</string>
+    <string name="game_over_stat_combo">COMBO</string>
+
+    <!-- Content Descriptions -->
+    <string name="cd_keep_playing">Watch video to continue playing</string>
+    <string name="cd_replay_daily">Replay daily challenge</string>
+    <string name="cd_replay_classic">Replay from level 1</string>
+    <string name="cd_leaderboard">View leaderboard</string>
+    <string name="cd_go_home">Go to main menu</string>
+
+    <!-- GameOverScreen Strings -->
+    <string name="game_over_reward_title">REWARD</string>
+    <string name="game_over_xp_format">+%1$d XP</string>
+
+    <!-- Stats Labels -->
+    <string name="game_over_stat_combo_format">%1$dx</string>
+    <string name="game_over_stat_accuracy_format">%1$d%%</string>
+
+    <!-- Accessibility / Content Descriptions -->
+    <string name="game_over_cd_keep_playing">Watch video to continue playing</string>
+    <string name="game_over_cd_replay_daily">Replay challenge</string>
+    <string name="game_over_cd_replay_classic">Replay from level 1</string>
+    <string name="game_over_cd_leaderboard">View leaderboard</string>
+    <string name="game_over_cd_home">Go to home screen</string>
+
+    <!-- Achievements Screen Strings -->
+    <string name="achievements_screen_title">Memory Achievements</string>
+    <string name="achievements_unlocked_badges_format">Unlocked %1$d / %2$d badges</string>
+    <string name="achievements_status_completed">Completed! 🎉</string>
+    <string name="achievements_icon_unlocked_desc">Unlocked</string>
+
+    <!-- Achievement Items Data (for DB/Pre-population) -->
+    <string name="achievement_first_win_title">First Step</string>
+    <string name="achievement_first_win_desc">Complete your first memory puzzle</string>
+
+    <string name="achievement_streak_master_title">On Fire</string>
+    <string name="achievement_streak_master_desc">Maintain a 7-day daily streak</string>
+
+    <string name="achievement_score_hunter_title">Score Hunter</string>
+    <string name="achievement_score_hunter_desc">Reach 10,000 points in a single game</string>
+
+    <string name="achievement_grid_master_title">Grid Master</string>
+    <string name="achievement_grid_master_desc">Reach Level 15 in Classic Mode</string>
+
+    <!-- Achievements Screen -->
+    <string name="achievements_summary_trophy_emoji">🏆</string>
+    <string name="achievements_summary_trophy">Badges earned</string>
+    <string name="achievements_progress_format">%1$d / %2$d</string>
+    <string name="achievements_progress_percent">%1$d%%</string>
+
+    <!-- Daily Challenge Screen -->
+    <string name="daily_challenge_title">Daily Challenge</string>
+    <string name="daily_challenge_date_format">EEEE, MMMM dd</string>
+    <string name="daily_challenge_streak_count">%1$d Day Streak</string>
+    <string name="daily_challenge_completed_today">Completed today!</string>
+    <string name="daily_challenge_not_completed_today">Not completed today</string>
+    <string name="daily_challenge_status_done">DONE 🎉</string>
+    <string name="daily_challenge_status_not_done">NOT DONE</string>
+    <string name="daily_challenge_monthly_grid_title">THIS MONTH\'S ATTENDANCE</string>
+    <string name="daily_challenge_month_format">Month %1$d</string>
+    <string name="daily_challenge_grid_size_title">Grid Size</string>
+    <string name="daily_challenge_grid_size_value">5 × 5</string>
+    <string name="daily_challenge_grid_size_subtitle">25 tiles</string>
+    <string name="daily_challenge_tiles_to_remember_title">Tiles to Memorize</string>
+    <string name="daily_challenge_tiles_to_remember_value">11 Tiles</string>
+    <string name="daily_challenge_tiles_to_remember_subtitle">Bonus +50 XP</string>
+    <string name="daily_challenge_reward_title">Challenge Rewards</string>
+    <string name="daily_challenge_reward_subtitle">+50 Bonus XP And Keep your streak alive 🔥</string>
+
+
+    <!-- Statistics Screen -->
+    <string name="stats_screen_title">Memory Statistics</string>
+    <string name="stats_back_button_desc">Back</string>
+
+    <!-- Accuracy Donut Card -->
+    <string name="stats_accuracy_title">Accuracy</string>
+    <string name="stats_correct_cells_format">Correct: %1$,d tiles</string>
+    <string name="stats_incorrect_cells_format">Wrong: %1$,d tiles</string>
+    <string name="stats_total_attempted_format">Total picks: %1$,d</string>
+
+    <!-- Stat Grid Cards -->
+    <string name="stats_total_games_title">Games Played</string>
+    <string name="stats_total_games_subtitle">Total matches</string>
+
+    <string name="stats_best_score_title">Best Score</string>
+    <string name="stats_best_score_subtitle">Personal record</string>
+
+    <string name="stats_highest_level_title">Highest Level</string>
+    <string name="stats_level_value_format">Level %1$d</string>
+    <string name="stats_highest_level_subtitle">Highest stage reached</string>
+
+    <string name="stats_combo_streak_title">Combo Streak</string>
+    <string name="stats_combo_value_format">%1$dx</string>
+    <string name="stats_combo_streak_subtitle">Consecutive correct rounds</string>
+
+    <string name="stats_day_streak_title">Day Streak</string>
+    <string name="stats_day_count_format">%1$d Days</string>
+    <string name="stats_longest_streak_subtitle_format">Record: %1$d Days</string>
+
+    <string name="stats_daily_challenge_title">Daily Challenge</string>
+    <string name="stats_daily_completed_subtitle">Completed</string>
+
+    <!-- Recent History Chart -->
+    <string name="stats_chart_title">Recent Score History</string>
+    <string name="stats_chart_empty">No recent game history available. Play a match to track your scores!</string>
+    <string name="stats_chart_recent_games_label">Recent matches</string>
+    <string name="stats_chart_max_score_format">Best: %1$,d pts</string>
+
+    <!-- Leaderboard Screen -->
+    <string name="leaderboard_title">Leaderboard</string>
+    <string name="leaderboard_back_desc">Back</string>
+
+    <!-- Edit Name Dialog -->
+    <string name="leaderboard_dialog_edit_title">Edit Display Name</string>
+    <string name="leaderboard_dialog_edit_subtitle">This name will appear on the global leaderboard:</string>
+    <string name="leaderboard_dialog_name_label">Your Name</string>
+    <string name="leaderboard_dialog_save">Save</string>
+    <string name="leaderboard_dialog_cancel">Cancel</string>
+
+    <!-- Player Card & Badges -->
+    <string name="leaderboard_default_player_name">Player</string>
+    <string name="leaderboard_edit_name_desc">Edit name</string>
+    <string name="leaderboard_personal_best_format">Best Score: %1$,d pts</string>
+    <string name="leaderboard_top_player_badge">Top Player</string>
+    <string name="leaderboard_you_tag">YOU</string>
+
+    <!-- List & Empty States -->
+    <string name="leaderboard_section_title">Top Scores</string>
+    <string name="leaderboard_empty_title">No Scores Yet</string>
+    <string name="leaderboard_empty_subtitle">Play a game to set the first record on the leaderboard!</string>
+    <string name="leaderboard_pts_suffix">pts</string>
+
+    <!-- Splash Screen -->
+    <string name="splash_logo_content_description">Game logo</string>
+    <string name="splash_loading_memory">Initializing memory...</string>
+    <string name="splash_loading_grid">Loading grid map...</string>
+    <string name="splash_loading_ready">Ready to play!</string>
+
+
+    <!-- Top bar -->
+    <string name="stats_title">Statistics</string>
+    <string name="stats_subtitle">Track your progress</string>
+    <string name="cd_back">Back</string>
+
+    <!-- Accuracy card -->
+    <string name="accuracy_title">Accuracy</string>
+    <string name="accuracy_percent">%1$d%%</string>
+    <string name="accuracy_label">correct</string>
+    <string name="legend_correct">Correct answers</string>
+    <string name="legend_incorrect">Wrong answers</string>
+    <string name="legend_total">Total picks</string>
+
+    <!-- Overview tiles -->
+    <string name="section_overview">Overview</string>
+    <string name="tile_games_title">Games played</string>
+    <string name="tile_games_sub">All time</string>
+    <string name="tile_best_score_title">Best score</string>
+    <string name="tile_best_score_sub">Personal record</string>
+    <string name="tile_best_level_title">Highest level</string>
+    <string name="tile_best_level_value">Level %1$d</string>
+    <string name="tile_best_level_sub">Furthest reached</string>
+    <string name="tile_combo_title">Best combo</string>
+    <string name="tile_combo_value">%1$dx</string>
+    <string name="tile_combo_sub">Correct in a row</string>
+    <string name="tile_streak_title">Daily streak</string>
+    <string name="tile_streak_sub">Longest: %1$d</string>
+    <string name="tile_daily_title">Daily challenges</string>
+    <string name="tile_daily_sub">Completed</string>
+
+    <plurals name="streak_days">
+        <item quantity="one">%1$d day</item>
+        <item quantity="other">%1$d days</item>
+    </plurals>
+
+    <!-- Recent scores chart -->
+    <string name="recent_title">Recent scores</string>
+    <string name="recent_subtitle">Your last %1$d games</string>
+    <string name="recent_empty">No games yet.\nPlay a round to get started!</string>
+    <string name="recent_axis">Oldest → newest</string>
+    <string name="recent_best">Best: %1$s pts</string>
+    <string name="recent_average">Average: %1$s pts</string>
+
+
+    <!-- Header -->
+    <string name="home_title">Memory Grid</string>
+    <string name="home_tagline">Challenge yourself with increasing difficulty</string>
+    <string name="home_settings_desc">Settings</string>
+
+    <!-- Streak -->
+    <plurals name="home_streak_days">
+        <item quantity="one">%1$d day streak</item>
+        <item quantity="other">%1$d day streak</item>
+    </plurals>
+
+    <!-- Stat cards -->
+    <string name="home_high_score_title">High score</string>
+    <string name="home_high_score_subtitle">Best score</string>
+    <string name="home_best_level_title">Best level</string>
+    <string name="home_best_level_value">Level %1$d</string>
+    <string name="home_best_level_subtitle">Highest level reached</string>
+
+    <!-- Shortcuts -->
+    <string name="home_statistics">Statistics</string>
+    <string name="home_achievements">Achievements</string>
+
+    <!-- Primary action -->
+    <string name="home_start_game">Start game from level 1</string>
+
+    <!-- Share / links -->
+    <string name="home_share_message">🎮 Check out this awesome Memory Game! Download now: %1$s</string>
+    <string name="home_share_chooser_title">Share game via</string>
+    <string name="home_error_open_link">Cannot open link</string>
+    <string name="home_error_share">Cannot share app</string>
+
+</resources>

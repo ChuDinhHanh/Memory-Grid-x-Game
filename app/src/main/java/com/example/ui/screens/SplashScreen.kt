@@ -1,8 +1,9 @@
+
 package com.example.ui.screens
 
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.core.Easing
 import androidx.compose.animation.core.LinearEasing
-import androidx.compose.animation.core.OvershootEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
@@ -27,6 +28,7 @@ import androidx.compose.ui.draw.scale
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -35,53 +37,66 @@ import com.example.R
 import com.example.ui.components.CustomProgressBar
 import kotlinx.coroutines.launch
 
+// Overshoot easing
+fun OvershootEasing(tension: Float = 2.0f) = Easing { fraction ->
+    val t = fraction - 1.0f
+    t * t * ((tension + 1.0f) * t + tension) + 1.0f
+}
+
 @Composable
-fun CustomSplashScreen(onTimeout: () -> Unit) {
-    // 1. Biến hiệu ứng cho Logo (Hiện dần + Phóng to)
+fun CustomSplashScreen(
+    onTimeout: () -> Unit
+) {
+    // Logo animations
     val logoAlpha = remember { Animatable(0f) }
     val logoScale = remember { Animatable(0.8f) }
-    
-    // 2. Biến hiệu ứng cho Thanh Progress
+
+    // Loading progress animation
     val progressAnim = remember { Animatable(0f) }
 
-    LaunchedEffect(key1 = true) {
-        // Chạy đồng thời các hiệu ứng
+    LaunchedEffect(Unit) {
+        // Run logo animations concurrently
         launch {
-            logoAlpha.animateTo(1f, animationSpec = tween(1000))
-        }
-        launch {
-            // Hiệu ứng phóng to nhẹ (bung ra) bằng OvershootEasing
-            logoScale.animateTo(
-                targetValue = 1f, 
-                animationSpec = tween(1200, easing = OvershootEasing(1.5f))
+            logoAlpha.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(durationMillis = 1000)
             )
         }
 
-        // Thanh tiến trình chạy trong 2.5 giây
+        launch {
+            logoScale.animateTo(
+                targetValue = 1f,
+                animationSpec = tween(
+                    durationMillis = 1200,
+                    easing = OvershootEasing(1.5f)
+                )
+            )
+        }
+
+        // Animate loading progress over 2.5 seconds
         progressAnim.animateTo(
             targetValue = 1f,
-            animationSpec = tween(durationMillis = 2500, easing = LinearEasing)
+            animationSpec = tween(
+                durationMillis = 2500,
+                easing = LinearEasing
+            )
         )
 
-        // Sau khi thanh load chạy xong thì chuyển màn hình
+        // Navigate when loading is complete
         onTimeout()
     }
 
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
-        // 1. HÌNH NỀN CỦA BẠN (Phủ kín màn hình)
+        // GAME LOGO
         Image(
-            painter = painterResource(id = R.drawable.bg_splash),
-            contentDescription = null,
-            modifier = Modifier.fillMaxSize(),
-            contentScale = ContentScale.Crop,
-        )
-
-        // 2. LOGO GAME (Căn trên, có hiệu ứng bung ra)
-        Image(
-            painter = painterResource(id = R.drawable.splash_logo),
-            contentDescription = "Game Logo",
+            painter = painterResource(
+                id = R.drawable.splash_logo
+            ),
+            contentDescription = stringResource(
+                id = R.string.splash_logo_content_description
+            ),
             modifier = Modifier
                 .fillMaxWidth(0.9f)
                 .align(Alignment.TopCenter)
@@ -92,22 +107,39 @@ fun CustomSplashScreen(onTimeout: () -> Unit) {
             contentScale = ContentScale.FillWidth
         )
 
-        // 3. KHU VỰC LOADING (Căn dưới)
+        // LOADING SECTION
         Column(
             modifier = Modifier
                 .align(Alignment.BottomCenter)
                 .fillMaxWidth()
                 .navigationBarsPadding()
-                .padding(horizontal = 48.dp, vertical = 40.dp),
+                .padding(
+                    horizontal = 48.dp,
+                    vertical = 40.dp
+                ),
             horizontalAlignment = Alignment.CenterHorizontally
         ) {
-            // Tùy chỉnh chữ hiển thị trạng thái loading theo phần trăm thanh load
+            // Dynamic loading status
             val loadingStatus = when {
-                progressAnim.value < 0.4f -> "Đang khởi tạo bộ nhớ..."
-                progressAnim.value < 0.8f -> "Đang tải bản đồ lưới..."
-                else -> "Sẵn sàng chiến đấu!"
+                progressAnim.value < 0.4f -> {
+                    stringResource(
+                        id = R.string.splash_loading_memory
+                    )
+                }
+
+                progressAnim.value < 0.8f -> {
+                    stringResource(
+                        id = R.string.splash_loading_grid
+                    )
+                }
+
+                else -> {
+                    stringResource(
+                        id = R.string.splash_loading_ready
+                    )
+                }
             }
-            
+
             Text(
                 text = loadingStatus,
                 style = MaterialTheme.typography.bodyMedium.copy(
@@ -117,9 +149,11 @@ fun CustomSplashScreen(onTimeout: () -> Unit) {
                 )
             )
 
-            Spacer(modifier = Modifier.height(16.dp))
+            Spacer(
+                modifier = Modifier.height(16.dp)
+            )
 
-            // Thanh Progress với Rocket
+            // Progress bar with rocket icon
             CustomProgressBar(
                 progress = progressAnim.value,
                 iconResId = R.drawable.splash_roc,
@@ -132,5 +166,7 @@ fun CustomSplashScreen(onTimeout: () -> Unit) {
 @Preview(showSystemUi = true)
 @Composable
 fun CustomSplashScreenPreview() {
-    CustomSplashScreen(onTimeout = {})
+    CustomSplashScreen(
+        onTimeout = {}
+    )
 }

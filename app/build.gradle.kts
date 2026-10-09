@@ -11,12 +11,12 @@ plugins {
 
 android {
     namespace = "com.example"
-    compileSdk = 36
+    compileSdk = 35 // Giữ ở mức ổn định 35 để tránh yêu cầu API 37
 
     defaultConfig {
         applicationId = "com.example.memorygrid.kxpzq"
         minSdk = 24
-        targetSdk = 36
+        targetSdk = 35
         versionCode = 1
         versionName = "1.0"
 
@@ -56,8 +56,12 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
-    kotlinOptions {
-        jvmTarget = "11"
+    // Sửa lỗi deprecated kotlinOptions
+    kotlin {
+        compilerOptions {
+            jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
+            freeCompilerArgs.add("-Xopt-in=androidx.compose.material3.ExperimentalMaterial3Api")
+        }
     }
 
     buildFeatures {
@@ -82,7 +86,7 @@ dependencies {
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
     implementation(libs.androidx.core.ktx)
-    implementation(libs.androidx.core.splashscreen) // Thêm thư viện Splash Screen
+    implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
@@ -97,13 +101,14 @@ dependencies {
     implementation(libs.okhttp)
     implementation(libs.retrofit)
     implementation(libs.androidx.compose.runtime)
-    implementation("com.google.android.gms:play-services-ads:25.5.0")
+    implementation("com.google.android.gms:play-services-ads:23.0.0")
 
     testImplementation(libs.androidx.compose.ui.test.junit4)
-    testImplementation(libs.androidx.core)
+    testImplementation(libs.androidx.core.testing)
     testImplementation(libs.androidx.junit)
     testImplementation(libs.junit)
-    testImplementation(libs.kotlinx.coroutines.test)
+    // Sửa tên thư viện test để tránh xung đột
+    testImplementation(libs.kotlinx.coroutines.test.lib)
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
@@ -113,7 +118,8 @@ dependencies {
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
-    androidTestImplementation(libs.androidx.runner)
+    // Khai báo đúng tên runner từ catalog
+    androidTestImplementation(libs.androidx.test.runner)
     
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)

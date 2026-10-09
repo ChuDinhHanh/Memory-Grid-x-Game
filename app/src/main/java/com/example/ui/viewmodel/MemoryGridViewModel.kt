@@ -3,10 +3,8 @@ package com.example.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
-import com.example.data.local.DailyChallengeEntity
 import com.example.data.local.MemoryGridDatabase
 import com.example.data.local.PlayerProfileEntity
-import com.example.data.model.CellVisualState
 import com.example.data.model.DifficultyConfig
 import com.example.data.model.GameEndSummary
 import com.example.data.model.GameMode
@@ -17,7 +15,6 @@ import com.example.engine.AudioHapticService
 import com.example.engine.DifficultyEngine
 import com.example.engine.PatternGenerator
 import com.example.engine.ScoringEngine
-import com.example.ui.theme.ThemeSetting
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -32,6 +29,7 @@ import java.util.Locale
 
 data class GameUiState(
     val phase: GamePhase = GamePhase.IDLE,
+    val isPaused: Boolean = false,
     val gameMode: GameMode = GameMode.CLASSIC,
     val countdownNumber: Int = 3,
     val level: Int = 1,
@@ -49,6 +47,8 @@ data class GameUiState(
     val activeStepNumberMap: Map<Int, Int> = emptyMap(),
     val memorizeTimeTotalMs: Long = 1800L,
     val memorizeTimeRemainingMs: Long = 1800L,
+    val recallTimeTotalMs: Long = 10000L,       // Tổng thời gian đếm ngược Recall 10s
+    val recallTimeRemainingMs: Long = 10000L,    // Thời gian Recall còn lại
     val roundScoreEarned: Int = 0,
     val roundBonusEarned: Int = 0,
     val evaluationResult: RoundEvaluationResult? = null,
@@ -57,7 +57,16 @@ data class GameUiState(
     val dailyChallengeAlreadyCompletedToday: Boolean = false,
     val requiresStrictSequence: Boolean = false,
     val selectedSequence: List<Int> = emptyList(),
-    val rewardedContinueUsed: Boolean = false
+    val rewardedContinueUsed: Boolean = false,
+    val successMessage: Int = com.example.R.drawable.success_txt
+)
+
+private val successMessages = listOf(
+    com.example.R.drawable.success_txt,
+    com.example.R.drawable.waouh_txt,
+    com.example.R.drawable.amazing_txt,
+    com.example.R.drawable.good_txt,
+    com.example.R.drawable.awesome_txt
 )
 
 class MemoryGridViewModel(application: Application) : AndroidViewModel(application) {
@@ -69,22 +78,35 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
     private val _uiState = MutableStateFlow(GameUiState())
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
 
-    val playerProfile: StateFlow<PlayerProfileEntity?> = repository.playerProfile
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
+    val playerProfile: StateFlow<PlayerProfileEntity?> =
+        repository.playerProfile.stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), null)
 
-    val achievements = repository.achievements
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val achievements = repository.achievements.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        emptyList()
+    )
 
-    val recentGames = repository.recentGames
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val recentGames = repository.recentGames.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        emptyList()
+    )
 
-    val topScores = repository.topScores
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val topScores = repository.topScores.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        emptyList()
+    )
 
-    val topLevels = repository.topLevels
-        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
+    val topLevels = repository.topLevels.stateIn(
+        viewModelScope,
+        SharingStarted.WhileSubscribed(5000),
+        emptyList()
+    )
 
     private var phaseTimerJob: Job? = null
+    private var recallTimerJob: Job? = null
     private var recallStartTimeMs: Long = 0L
 
     // Tracking stats during a single match
@@ -115,6 +137,7 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
 
     fun startGame(mode: GameMode = GameMode.CLASSIC) {
         phaseTimerJob?.cancel()
+        recallTimerJob?.cancel()
         roundsPlayedInGame = 0
         correctRoundsInGame = 0
         incorrectRoundsInGame = 0
@@ -140,6 +163,7 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
 
     private fun startCountdown() {
         phaseTimerJob?.cancel()
+        recallTimerJob?.cancel()
         phaseTimerJob = viewModelScope.launch {
             for (i in 3 downTo 1) {
                 _uiState.value = _uiState.value.copy(countdownNumber = i)
@@ -151,6 +175,7 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
     }
 
     private fun startRound() {
+        recallTimerJob?.cancel()
         val state = _uiState.value
         val config: DifficultyConfig = if (state.gameMode == GameMode.DAILY) {
             DifficultyEngine.calculateDifficulty(state.level, GameMode.DAILY)
@@ -173,9 +198,7 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
         }
         previousPattern = pattern
 
-        // Give new players several rounds to learn the board first. From level
-        // 5 onward every highlighted cell must be replayed in its shown order.
-        val isStrictSequence = state.level >= 5
+        val isStrictSequence = state.level >= 3
         val stepMap = if (isStrictSequence) {
             pattern.mapIndexed { index, cell -> cell to (index + 1) }.toMap()
         } else {
@@ -194,6 +217,8 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
             activeStepNumberMap = stepMap,
             memorizeTimeTotalMs = config.memorizationTimeMs,
             memorizeTimeRemainingMs = config.memorizationTimeMs,
+            recallTimeTotalMs = 10000L,
+            recallTimeRemainingMs = 10000L,
             evaluationResult = null,
             roundScoreEarned = 0,
             roundBonusEarned = 0,
@@ -202,10 +227,8 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
 
         phaseTimerJob?.cancel()
         if (!isStrictSequence) {
-            // Level 1 & 2: Free recall - All target cells illuminate together
             _uiState.value = _uiState.value.copy(
-                revealedSequenceIndices = pattern.toSet(),
-                currentlyLitCell = null
+                revealedSequenceIndices = pattern.toSet(), currentlyLitCell = null
             )
             audioHaptic.playTargetDisplay()
             audioHaptic.vibrateTap()
@@ -230,7 +253,6 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
                 transitionToRecall()
             }
         } else {
-            // Level 3+: Strict sequential recall - Cells light up 1-by-1 in order
             phaseTimerJob = viewModelScope.launch {
                 val stepDelay = when {
                     state.level <= 4 -> 500L
@@ -252,8 +274,7 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
                 }
 
                 _uiState.value = _uiState.value.copy(
-                    currentlyLitCell = null,
-                    revealedSequenceIndices = pattern.toSet()
+                    currentlyLitCell = null, revealedSequenceIndices = pattern.toSet()
                 )
                 delay(550L)
 
@@ -271,10 +292,35 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
     private fun transitionToRecall() {
         recallStartTimeMs = System.currentTimeMillis()
         audioHaptic.playRecallPrompt()
+
+        val recallDuration = 10000L // 10 Giây
         _uiState.value = _uiState.value.copy(
             phase = GamePhase.RECALL,
-            memorizeTimeRemainingMs = 0L
+            memorizeTimeRemainingMs = 0L,
+            recallTimeTotalMs = recallDuration,
+            recallTimeRemainingMs = recallDuration
         )
+
+        // BẮT ĐẦU ĐẾM NGƯỢC 10 GIÂY DÀNH CHO PHASE RECALL
+        recallTimerJob?.cancel()
+        recallTimerJob = viewModelScope.launch {
+            val interval = 50L
+            var timeRemaining = recallDuration
+
+            while (timeRemaining > 0) {
+                delay(interval)
+                timeRemaining -= interval
+                _uiState.value = _uiState.value.copy(
+                    recallTimeRemainingMs = maxOf(0L, timeRemaining)
+                )
+            }
+
+            // Hết 10 giây mà người chơi chưa chọn xong -> Tự động thua!
+            val currentState = _uiState.value
+            if (currentState.phase == GamePhase.RECALL) {
+                evaluateFailure(wrongCellIndex = -1, allSelected = currentState.selectedCells)
+            }
+        }
     }
 
     fun onCellTapped(cellIndex: Int) {
@@ -286,21 +332,17 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
         val isStrict = state.requiresStrictSequence
 
         if (!isStrict) {
-            // Level 1-2: Free recall (any order of target cells)
             if (cellIndex !in state.targetPattern) {
-                // Tapped wrong cell -> Sudden death!
                 val newSelected = state.selectedCells + cellIndex
                 _uiState.value = state.copy(selectedCells = newSelected)
                 evaluateFailure(wrongCellIndex = cellIndex, allSelected = newSelected)
                 return
             }
 
-            // Correct cell
             val newSelected = state.selectedCells + cellIndex
             val newSeq = state.selectedSequence + cellIndex
             _uiState.value = state.copy(
-                selectedCells = newSelected,
-                selectedSequence = newSeq
+                selectedCells = newSelected, selectedSequence = newSeq
             )
             audioHaptic.playTap()
             audioHaptic.vibrateTap()
@@ -309,19 +351,16 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
                 evaluateSuccess(newSelected)
             }
         } else {
-            // Level >= 3: Strict sequential recall!
             val expectedStep = state.selectedSequence.size
             val expectedCell = state.targetPattern[expectedStep]
 
             if (cellIndex != expectedCell) {
-                // Tapped wrong cell OR out-of-order -> Sudden death!
                 val newSelected = state.selectedCells + cellIndex
                 _uiState.value = state.copy(selectedCells = newSelected)
                 evaluateFailure(wrongCellIndex = cellIndex, allSelected = newSelected)
                 return
             }
 
-            // Correct cell in exact order!
             val newSeq = state.selectedSequence + cellIndex
             val newSelected = state.selectedCells + cellIndex
             val stepMap = newSeq.mapIndexed { idx, cell -> cell to (idx + 1) }.toMap()
@@ -343,7 +382,13 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
 
     private fun evaluateSuccess(selected: Set<Int>) {
         phaseTimerJob?.cancel()
-        _uiState.value = _uiState.value.copy(phase = GamePhase.EVALUATING)
+        recallTimerJob?.cancel() // Dừng bộ đếm ngược 10s khi thành công
+
+        val randomSuccessMessage = successMessages.random()
+        _uiState.value = _uiState.value.copy(
+            phase = GamePhase.EVALUATING,
+            successMessage = randomSuccessMessage
+        )
 
         val state = _uiState.value
         val targetList = state.targetPattern
@@ -397,17 +442,18 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
         audioHaptic.playCombo(newCombo)
         audioHaptic.vibrateSuccess()
 
-        // If Daily Challenge is completed (1 successful round)
         if (state.gameMode == GameMode.DAILY) {
             viewModelScope.launch {
-                val accuracy = ScoringEngine.calculateAccuracy(correctCellsInGame, cellsAttemptedInGame)
-                repository.saveDailyChallengeCompleted(state.dailyChallengeDateKey, newTotalScore, accuracy)
+                val accuracy =
+                    ScoringEngine.calculateAccuracy(correctCellsInGame, cellsAttemptedInGame)
+                repository.saveDailyChallengeCompleted(
+                    state.dailyChallengeDateKey, newTotalScore, accuracy
+                )
                 saveGameEndSummary(newTotalScore, state.level, isSuccess = true)
             }
             return
         }
 
-        // Proceed to next level automatically
         phaseTimerJob = viewModelScope.launch {
             delay(1000)
             audioHaptic.playLevelUp()
@@ -420,6 +466,7 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
 
     private fun evaluateFailure(wrongCellIndex: Int, allSelected: Set<Int>) {
         phaseTimerJob?.cancel()
+        recallTimerJob?.cancel() // Dừng bộ đếm ngược 10s khi thất bại
 
         val state = _uiState.value
         val targetList = state.targetPattern
@@ -435,29 +482,25 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
             isSuccess = false,
             totalExpected = targetList.size,
             correctSelected = correctList.size,
-            wrongSelected = 1,
+            wrongSelected = if (wrongCellIndex != -1) 1 else 0,
             baseScore = 0,
             memoryBonus = 0,
             streakMultiplier = 1.0f,
             roundScore = 0,
             xpEarned = 0,
             correctIndices = correctList,
-            wrongIndices = listOf(wrongCellIndex),
+            wrongIndices = if (wrongCellIndex != -1) listOf(wrongCellIndex) else emptyList(),
             missedIndices = missedList
         )
 
         _uiState.value = state.copy(
-            phase = GamePhase.FAILURE,
-            lives = 0,
-            combo = 0,
-            evaluationResult = evalResult
+            phase = GamePhase.FAILURE, lives = 0, combo = 0, evaluationResult = evalResult
         )
 
         audioHaptic.playWrong()
         audioHaptic.vibrateWrong()
 
         phaseTimerJob = viewModelScope.launch {
-            // Show red wrong tile and missed tiles for 1.3 seconds
             delay(1300)
             saveGameEndSummary(state.score, state.level, isSuccess = false)
         }
@@ -468,7 +511,8 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
         val bestScore = currentProfile?.bestScore ?: 0
         val isNewHigh = finalScore > bestScore
         val accuracy = ScoringEngine.calculateAccuracy(correctCellsInGame, cellsAttemptedInGame)
-        val xpEarned = ScoringEngine.calculateXpGained(levelReached, _uiState.value.gameMode == GameMode.DAILY)
+        val xpEarned =
+            ScoringEngine.calculateXpGained(levelReached, _uiState.value.gameMode == GameMode.DAILY)
 
         val summary = GameEndSummary(
             finalScore = finalScore,
@@ -492,25 +536,26 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
         )
 
         _uiState.value = _uiState.value.copy(
-            phase = GamePhase.RESULT,
-            gameEndSummary = summary
+            phase = GamePhase.RESULT, gameEndSummary = summary
         )
     }
 
     fun exitToHome() {
         phaseTimerJob?.cancel()
+        recallTimerJob?.cancel()
         _uiState.value = GameUiState(phase = GamePhase.IDLE)
     }
 
-    /** Called only after the rewarded-ad flow confirms a reward. */
     fun continueCurrentLevelAfterReward() {
         val state = _uiState.value
-        if (state.phase != GamePhase.RESULT ||
-            state.gameMode == GameMode.DAILY ||
-            state.rewardedContinueUsed
-        ) return
+
+        if (state.phase != GamePhase.RESULT || state.gameMode == GameMode.DAILY) {
+            return
+        }
 
         phaseTimerJob?.cancel()
+        recallTimerJob?.cancel()
+
         _uiState.value = state.copy(
             phase = GamePhase.COUNTDOWN,
             countdownNumber = 3,
@@ -522,45 +567,19 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
             revealedSequenceIndices = emptySet(),
             activeStepNumberMap = emptyMap(),
             evaluationResult = null,
-            gameEndSummary = null,
-            rewardedContinueUsed = true
+            gameEndSummary = null
         )
+
         startCountdown()
     }
 
-    fun toggleSound() {
-        val profile = playerProfile.value ?: return
-        val newSound = !profile.soundEnabled
-        audioHaptic.soundEnabled = newSound
-        viewModelScope.launch {
-            repository.updateSettings(
-                sound = newSound,
-                haptics = profile.hapticsEnabled,
-                theme = profile.themeSetting
-            )
-        }
-    }
 
-    fun toggleHaptics() {
-        val profile = playerProfile.value ?: return
-        val newHaptics = !profile.hapticsEnabled
-        audioHaptic.hapticsEnabled = newHaptics
-        viewModelScope.launch {
-            repository.updateSettings(
-                sound = profile.soundEnabled,
-                haptics = newHaptics,
-                theme = profile.themeSetting
-            )
-        }
-    }
 
     fun setThemeSetting(theme: String) {
         val profile = playerProfile.value ?: return
         viewModelScope.launch {
             repository.updateSettings(
-                sound = profile.soundEnabled,
-                haptics = profile.hapticsEnabled,
-                theme = theme
+                sound = profile.soundEnabled, haptics = profile.hapticsEnabled, theme = theme
             )
         }
     }
@@ -577,33 +596,112 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
             exitToHome()
         }
     }
+    // Thêm 2 hàm pauseGame và resumeGame vào class MemoryGridViewModel:
 
-    fun getCellVisualState(cellIndex: Int): CellVisualState {
+    fun pauseGame() {
         val state = _uiState.value
-        return when (state.phase) {
-            GamePhase.MEMORIZE -> {
-                when {
-                    cellIndex == state.currentlyLitCell -> CellVisualState.LIGHTING_UP
-                    cellIndex in state.revealedSequenceIndices -> CellVisualState.HIGHLIGHTED
-                    else -> CellVisualState.IDLE
-                }
-            }
-            GamePhase.RECALL -> {
-                if (cellIndex in state.selectedCells) CellVisualState.SELECTED else CellVisualState.IDLE
-            }
-            GamePhase.EVALUATING, GamePhase.SUCCESS -> {
-                if (cellIndex in state.targetPattern) CellVisualState.CORRECT_REVEAL else CellVisualState.IDLE
-            }
-            GamePhase.FAILURE, GamePhase.GAME_OVER, GamePhase.RESULT -> {
-                val eval = state.evaluationResult
-                when {
-                    eval != null && cellIndex in eval.wrongIndices -> CellVisualState.WRONG_REVEAL
-                    eval != null && cellIndex in eval.correctIndices -> CellVisualState.CORRECT_REVEAL
-                    eval != null && cellIndex in eval.missedIndices -> CellVisualState.MISSED_REVEAL
-                    else -> CellVisualState.IDLE
-                }
-            }
-            else -> CellVisualState.IDLE
+        // Chỉ tạm dừng khi đang ở các phase có chạy đếm ngược (MEMORIZE hoặc RECALL)
+        if (state.phase == GamePhase.MEMORIZE || state.phase == GamePhase.RECALL) {
+            phaseTimerJob?.cancel()
+            recallTimerJob?.cancel()
+            _uiState.value = state.copy(isPaused = true)
         }
     }
+
+    fun resumeGame() {
+        val state = _uiState.value
+        if (!state.isPaused) return
+
+        _uiState.value = state.copy(isPaused = false)
+
+        // Nếu đang ở phase Memorize, tiếp tục đếm ngược thời gian Memorize còn lại
+        if (state.phase == GamePhase.MEMORIZE) {
+            val interval = 50L
+            var timeRemaining = state.memorizeTimeRemainingMs
+
+            phaseTimerJob = viewModelScope.launch {
+                while (timeRemaining > 0) {
+                    delay(interval)
+                    timeRemaining -= interval
+                    _uiState.value = _uiState.value.copy(
+                        memorizeTimeRemainingMs = maxOf(0L, timeRemaining)
+                    )
+                }
+                _uiState.value = _uiState.value.copy(revealedSequenceIndices = emptySet())
+                delay(120L)
+                transitionToRecall()
+            }
+        }
+        // Nếu đang ở phase Recall, tiếp tục đếm ngược thời gian Recall còn lại
+        else if (state.phase == GamePhase.RECALL) {
+            val interval = 50L
+            var timeRemaining = state.recallTimeRemainingMs
+
+            recallTimerJob = viewModelScope.launch {
+                while (timeRemaining > 0) {
+                    delay(interval)
+                    timeRemaining -= interval
+                    _uiState.value = _uiState.value.copy(
+                        recallTimeRemainingMs = maxOf(0L, timeRemaining)
+                    )
+                }
+
+                val currentState = _uiState.value
+                if (currentState.phase == GamePhase.RECALL) {
+                    evaluateFailure(wrongCellIndex = -1, allSelected = currentState.selectedCells)
+                }
+            }
+        }
+    }
+
+    // =========================================================
+    // SETTINGS TOGGLES (SOUND / MUSIC / VIBRATION)
+    // =========================================================
+
+    fun toggleSound() {
+        val profile = playerProfile.value ?: return
+        val newSoundState = !profile.soundEnabled
+
+        // Cập nhật trạng thái tức thì cho AudioHapticService
+        audioHaptic.soundEnabled = newSoundState
+
+        viewModelScope.launch {
+            repository.updateSettings(
+                sound = newSoundState,
+                haptics = profile.hapticsEnabled,
+                theme = profile.themeSetting
+            )
+        }
+    }
+
+    fun toggleMusic() {
+        val profile = playerProfile.value ?: return
+        // Giả sử logic lưu Music chung hoặc lưu cấu hình riêng
+        val newSoundState = !profile.soundEnabled
+
+        viewModelScope.launch {
+            repository.updateSettings(
+                sound = newSoundState,
+                haptics = profile.hapticsEnabled,
+                theme = profile.themeSetting
+            )
+        }
+    }
+
+    fun toggleHaptics() {
+        val profile = playerProfile.value ?: return
+        val newHapticsState = !profile.hapticsEnabled
+
+        // Cập nhật trạng thái tức thì cho AudioHapticService
+        audioHaptic.hapticsEnabled = newHapticsState
+
+        viewModelScope.launch {
+            repository.updateSettings(
+                sound = profile.soundEnabled,
+                haptics = newHapticsState,
+                theme = profile.themeSetting
+            )
+        }
+    }
+
 }

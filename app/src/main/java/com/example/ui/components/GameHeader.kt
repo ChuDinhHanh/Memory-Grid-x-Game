@@ -2,32 +2,28 @@ package com.example.ui.components
 
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.animateFloatAsState
+import androidx.compose.animation.core.FastOutSlowInEasing
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.scaleIn
 import androidx.compose.animation.scaleOut
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.Close
-import androidx.compose.material.icons.filled.Favorite
-import androidx.compose.material.icons.filled.FavoriteBorder
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
-import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -35,13 +31,16 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.data.model.GameMode
 import com.example.data.model.GamePhase
 import com.example.ui.theme.AmberWarning
@@ -60,152 +59,173 @@ fun GameHeader(
     phase: GamePhase,
     targetCount: Int,
     selectedCount: Int,
+
     memorizeTimeTotal: Long,
     memorizeTimeRemaining: Long,
+
+    recallTimeTotal: Long,
+    recallTimeRemaining: Long,
+
     roundScoreEarned: Int,
+
     onExitClick: () -> Unit,
+    onSettingClick: () -> Unit,
+
     modifier: Modifier = Modifier,
+
     sequenceStep: Int = 0,
-    requiresStrictSequence: Boolean = false
+    requiresStrictSequence: Boolean = false,
+    successMessage: Int? = null,
 ) {
+
     Column(
         modifier = modifier
             .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 8.dp)
+            .padding(
+                horizontal = 16.dp,
+                vertical = 8.dp
+            )
     ) {
-        // Top row: Exit button, Mode & Level, Lives
+
+        // =========================================================
+        // TOP ROW
+        // =========================================================
+
         Row(
             modifier = Modifier.fillMaxWidth(),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
+
             IconButton(
                 onClick = onExitClick,
                 modifier = Modifier
                     .size(42.dp)
                     .clip(CircleShape)
-                    .background(MaterialTheme.colorScheme.surfaceVariant.copy(alpha = 0.6f))
                     .testTag("exit_game_button")
             ) {
                 Icon(
-                    imageVector = Icons.Default.Close,
-                    contentDescription = "Thoát ván chơi",
-                    tint = MaterialTheme.colorScheme.onSurface
-                )
-            }
-
-            // Mode & Level
-            Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                Text(
-                    text = mode.displayName.uppercase(),
-                    style = MaterialTheme.typography.labelMedium.copy(
-                        letterSpacing = 1.5.sp,
-                        fontWeight = FontWeight.Bold,
-                        color = MaterialTheme.colorScheme.primary
-                    )
-                )
-                Text(
-                    text = "Cấp $level",
-                    style = MaterialTheme.typography.titleLarge.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        color = MaterialTheme.colorScheme.onBackground
-                    )
-                )
-                Surface(
-                    shape = RoundedCornerShape(8.dp),
-                    color = if (requiresStrictSequence) ElectricCyan.copy(alpha = 0.15f) else MintSuccess.copy(alpha = 0.15f),
-                    border = androidx.compose.foundation.BorderStroke(
-                        0.8.dp,
-                        if (requiresStrictSequence) ElectricCyan else MintSuccess
+                    painter = painterResource(
+                        R.drawable.close_btn
                     ),
-                    modifier = Modifier.padding(top = 2.dp)
-                ) {
-                    Text(
-                        text = if (requiresStrictSequence) "⚡ Bắt buộc thứ tự 1➔2➔3" else "✨ Chọn tự do",
-                        style = MaterialTheme.typography.labelSmall.copy(
-                            fontWeight = FontWeight.Bold,
-                            color = if (requiresStrictSequence) ElectricCyan else MintSuccess,
-                            fontSize = 10.sp
-                        ),
-                        modifier = Modifier.padding(horizontal = 6.dp, vertical = 2.dp)
-                    )
-                }
+                    contentDescription = stringResource(
+                        R.string.cd_exit_game
+                    ),
+                    tint = Color.Unspecified,
+                    modifier = Modifier.fillMaxSize()
+                )
             }
 
-            // Lives indicator
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.spacedBy(4.dp)
+            LevelTag(level)
+
+            IconButton(
+                onClick = onSettingClick,
+                modifier = Modifier
+                    .size(42.dp)
+                    .clip(CircleShape)
+                    .testTag("settings_button")
             ) {
-                for (i in 1..maxLives) {
-                    val hasLife = i <= lives
-                    Icon(
-                        imageVector = if (hasLife) Icons.Default.Favorite else Icons.Default.FavoriteBorder,
-                        contentDescription = if (hasLife) "Mạng sống $i" else "Mất mạng $i",
-                        tint = if (hasLife) CoralError else MaterialTheme.colorScheme.outline.copy(alpha = 0.5f),
-                        modifier = Modifier.size(26.dp)
-                    )
-                }
+                Image(
+                    painter = painterResource(
+                        id = R.drawable.settings_btn
+                    ),
+                    contentDescription = stringResource(
+                        R.string.cd_settings
+                    ),
+                    modifier = Modifier.fillMaxSize()
+                )
             }
         }
 
-        Spacer(modifier = Modifier.height(12.dp))
+        Spacer(
+            modifier = Modifier.height(12.dp)
+        )
 
-        // Second row: Score & Combo Badge
+        // =========================================================
+        // SCORE + COMBO
+        // =========================================================
+
         Row(
-            modifier = Modifier.fillMaxWidth(),
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(36.dp),
             horizontalArrangement = Arrangement.SpaceBetween,
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Score
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                Text(
-                    text = "Điểm: ",
-                    style = MaterialTheme.typography.bodyLarge.copy(
-                        color = MaterialTheme.colorScheme.onSurfaceVariant
-                    )
-                )
+
+            Row(
+                verticalAlignment = Alignment.CenterVertically
+            ) {
+
                 Text(
                     text = "%,d".format(score),
-                    style = MaterialTheme.typography.titleMedium.copy(
+                    style = MaterialTheme.typography.headlineSmall.copy(
                         fontWeight = FontWeight.Bold,
                         color = MaterialTheme.colorScheme.onBackground
                     )
                 )
+
+                Image(
+                    painter = painterResource(
+                        R.drawable.coin_icon
+                    ),
+                    contentDescription = stringResource(
+                        R.string.cd_coin
+                    )
+                )
+
                 AnimatedVisibility(
-                    visible = roundScoreEarned > 0 && phase == GamePhase.SUCCESS,
+                    visible =
+                        roundScoreEarned > 0 &&
+                                phase == GamePhase.SUCCESS,
+
                     enter = fadeIn() + scaleIn(),
                     exit = fadeOut() + scaleOut()
                 ) {
+
                     Text(
-                        text = " +$roundScoreEarned",
-                        style = MaterialTheme.typography.labelLarge.copy(
+                        text = " " + stringResource(
+                            R.string.game_round_score_earned,
+                            roundScoreEarned
+                        ),
+                        style = MaterialTheme.typography.titleLarge.copy(
                             fontWeight = FontWeight.ExtraBold,
                             color = MintSuccess
                         ),
-                        modifier = Modifier.padding(start = 6.dp)
+                        modifier = Modifier.padding(
+                            start = 6.dp
+                        )
                     )
                 }
             }
 
-            // Combo flame badge
             AnimatedVisibility(
                 visible = combo >= 2,
                 enter = fadeIn() + scaleIn(),
                 exit = fadeOut() + scaleOut()
             ) {
+
                 Surface(
                     shape = RoundedCornerShape(16.dp),
-                    color = AmberWarning.copy(alpha = 0.2f),
-                    border = androidx.compose.foundation.BorderStroke(1.dp, AmberWarning)
+                    color = AmberWarning.copy(
+                        alpha = 0.2f
+                    )
                 ) {
+
                     Row(
-                        modifier = Modifier.padding(horizontal = 10.dp, vertical = 4.dp),
+                        modifier = Modifier.padding(
+                            horizontal = 12.dp,
+                            vertical = 6.dp
+                        ),
                         verticalAlignment = Alignment.CenterVertically
                     ) {
+
                         Text(
-                            text = "🔥 Combo $combo",
-                            style = MaterialTheme.typography.labelMedium.copy(
+                            text = stringResource(
+                                R.string.game_combo,
+                                combo
+                            ),
+                            style = MaterialTheme.typography.titleMedium.copy(
                                 fontWeight = FontWeight.Bold,
                                 color = AmberWarning
                             )
@@ -215,87 +235,358 @@ fun GameHeader(
             }
         }
 
-        Spacer(modifier = Modifier.height(10.dp))
+        Spacer(
+            modifier = Modifier.height(10.dp)
+        )
 
-        // Phase instruction & Countdown bar
+        // =========================================================
+        // INSTRUCTION + TIMER
+        // =========================================================
+
         val instructionText = when (phase) {
-            GamePhase.COUNTDOWN -> "Chuẩn bị..."
-            GamePhase.MEMORIZE -> {
+
+            GamePhase.COUNTDOWN ->
+                stringResource(
+                    R.string.game_phase_get_ready
+                )
+
+            GamePhase.MEMORIZE ->
                 if (requiresStrictSequence) {
-                    if (sequenceStep > 0) "Ô sáng theo thứ tự: $sequenceStep / $targetCount" else "Ghi nhớ THỨ TỰ các ô sáng..."
+                    stringResource(
+                        R.string.game_phase_memorize_sequence
+                    )
                 } else {
-                    "Ghi nhớ các ô sáng..."
+                    stringResource(
+                        R.string.game_phase_memorize
+                    )
                 }
-            }
-            GamePhase.RECALL -> {
+
+            GamePhase.RECALL ->
                 if (requiresStrictSequence) {
-                    "Chạm ĐÚNG THỨ TỰ (Bước ${selectedCount + 1} / $targetCount) • Sai là về Level 1!"
+                    stringResource(
+                        R.string.game_phase_recall_sequence
+                    )
                 } else {
-                    "Chạm các ô đã sáng ($selectedCount / $targetCount) • Sai là về Level 1!"
+                    stringResource(
+                        R.string.game_phase_recall_select
+                    )
                 }
-            }
-            GamePhase.EVALUATING -> "Đang kiểm tra kết quả..."
-            GamePhase.SUCCESS -> "Chính xác! Lên cấp độ tiếp theo..."
-            GamePhase.FAILURE -> {
-                if (requiresStrictSequence) {
-                    "Sai thứ tự hoặc sai ô! Chơi lại từ Level 1..."
-                } else {
-                    "Chọn sai ô! Chơi lại từ Level 1..."
-                }
-            }
+
+            GamePhase.EVALUATING ->
+                stringResource(
+                    R.string.game_phase_evaluating
+                )
+
+            GamePhase.SUCCESS ->
+                ""
+
+            GamePhase.FAILURE ->
+                stringResource(
+                    R.string.game_phase_try_again
+                )
+
             else -> ""
         }
 
         val instructionColor by animateColorAsState(
             targetValue = when (phase) {
-                GamePhase.MEMORIZE -> ElectricCyan
-                GamePhase.RECALL -> MaterialTheme.colorScheme.primary
-                GamePhase.SUCCESS -> MintSuccess
-                GamePhase.FAILURE -> CoralError
-                else -> MaterialTheme.colorScheme.onBackground
+
+                GamePhase.MEMORIZE ->
+                    ElectricCyan
+
+                GamePhase.RECALL ->
+                    MaterialTheme.colorScheme.primary
+
+                GamePhase.SUCCESS ->
+                    MintSuccess
+
+                GamePhase.FAILURE ->
+                    CoralError
+
+                else ->
+                    MaterialTheme.colorScheme.onBackground
             },
+
+            animationSpec = tween(
+                durationMillis = 250,
+                easing = FastOutSlowInEasing
+            ),
+
             label = "instructionColor"
         )
 
-        Text(
-            text = instructionText,
-            style = MaterialTheme.typography.bodyMedium.copy(
-                fontWeight = FontWeight.SemiBold,
-                color = instructionColor
-            ),
-            modifier = Modifier.padding(vertical = 4.dp)
+        // =========================================================
+        // COUNTER
+        // =========================================================
+
+        val showCounter =
+            phase == GamePhase.RECALL ||
+                    (
+                            phase == GamePhase.MEMORIZE &&
+                                    requiresStrictSequence
+                            )
+
+        /*
+         * QUAN TRỌNG:
+         *
+         * Không dùng:
+         *
+         * (recallTimeRemaining / 1000L) + 1
+         *
+         * vì 10000ms sẽ thành 11s.
+         *
+         * Dùng ceil:
+         *
+         * 10000 -> 10
+         * 9500  -> 10
+         * 5000  -> 5
+         * 1000  -> 1
+         * 500   -> 1
+         * 0     -> 0
+         */
+
+        val secondsLeft =
+            ((recallTimeRemaining + 999L) / 1000L)
+                .coerceAtLeast(0L)
+
+        // =========================================================
+        // INSTRUCTION AREA
+        // =========================================================
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(44.dp),
+            contentAlignment = Alignment.Center
+        ) {
+
+            if (showCounter) {
+
+                Row(
+                    modifier = Modifier.fillMaxSize(),
+                    horizontalArrangement =
+                        Arrangement.SpaceBetween,
+                    verticalAlignment =
+                        Alignment.CenterVertically
+                ) {
+
+                    // -------------------------------------------------
+                    // LEFT: INSTRUCTION
+                    // -------------------------------------------------
+
+                    Text(
+                        text = instructionText,
+
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = instructionColor
+                        ),
+
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis,
+
+                        modifier = Modifier.weight(
+                            1f,
+                            fill = false
+                        )
+                    )
+
+                    // -------------------------------------------------
+                    // RIGHT: COUNTER
+                    // -------------------------------------------------
+
+                    Surface(
+                        shape = RoundedCornerShape(10.dp),
+
+                        color =
+                            if (
+                                phase == GamePhase.RECALL &&
+                                secondsLeft <= 3
+                            ) {
+                                CoralError.copy(
+                                    alpha = 0.15f
+                                )
+                            } else {
+                                instructionColor.copy(
+                                    alpha = 0.12f
+                                )
+                            }
+                    ) {
+
+                        Text(
+                            text =
+                                if (phase == GamePhase.RECALL) {
+
+                                    "${
+                                        stringResource(
+                                            R.string.game_progress_format,
+                                            selectedCount,
+                                            targetCount
+                                        )
+                                    } • ${secondsLeft}s"
+
+                                } else {
+
+                                    stringResource(
+                                        R.string.game_progress_format,
+                                        sequenceStep,
+                                        targetCount
+                                    )
+                                },
+
+                            style = MaterialTheme.typography.titleMedium.copy(
+                                fontWeight = FontWeight.ExtraBold,
+
+                                color =
+                                    if (
+                                        phase == GamePhase.RECALL &&
+                                        secondsLeft <= 3
+                                    ) {
+                                        CoralError
+                                    } else {
+                                        instructionColor
+                                    }
+                            ),
+
+                            modifier = Modifier.padding(
+                                horizontal = 12.dp,
+                                vertical = 4.dp
+                            )
+                        )
+                    }
+                }
+
+            } else {
+
+                // =====================================================
+                // NO COUNTER
+                // =====================================================
+
+                if (
+                    phase == GamePhase.SUCCESS &&
+                    successMessage != null
+                ) {
+
+                    Image(
+                        painter = painterResource(
+                            id = successMessage
+                        ),
+                        contentDescription =
+                            stringResource(
+                                R.string.cd_completed
+                            ),
+                        modifier = Modifier.height(
+                            28.dp
+                        )
+                    )
+
+                } else {
+
+                    Text(
+                        text = instructionText,
+
+                        style = MaterialTheme.typography.titleLarge.copy(
+                            fontWeight = FontWeight.Bold,
+                            color = instructionColor
+                        ),
+
+                        maxLines = 1,
+                        overflow = TextOverflow.Ellipsis
+                    )
+                }
+            }
+        }
+
+        Spacer(
+            modifier = Modifier.height(4.dp)
         )
 
-        // Progress bar
-        if (phase == GamePhase.MEMORIZE) {
-            val progress = if (requiresStrictSequence) {
-                (sequenceStep.toFloat() / targetCount.coerceAtLeast(1)).coerceIn(0f, 1f)
-            } else {
-                (memorizeTimeRemaining.toFloat() / memorizeTimeTotal.coerceAtLeast(1L)).coerceIn(0f, 1f)
+        // =========================================================
+        // PROGRESS BAR
+        // =========================================================
+
+        val isProgressVisible =
+            phase == GamePhase.MEMORIZE ||
+                    phase == GamePhase.RECALL
+
+        val progress = when (phase) {
+
+            GamePhase.MEMORIZE -> {
+
+                if (requiresStrictSequence) {
+
+                    (
+                            sequenceStep.toFloat() /
+                                    targetCount.coerceAtLeast(1)
+                            ).coerceIn(0f, 1f)
+
+                } else {
+
+                    (
+                            memorizeTimeRemaining.toFloat() /
+                                    memorizeTimeTotal.coerceAtLeast(1L)
+                            ).coerceIn(0f, 1f)
+                }
             }
-            LinearProgressIndicator(
-                progress = { progress },
+
+            GamePhase.RECALL -> {
+
+                (
+                        recallTimeRemaining.toFloat() /
+                                recallTimeTotal.coerceAtLeast(1L)
+                        ).coerceIn(0f, 1f)
+            }
+
+            else -> 0f
+        }
+
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(16.dp),
+            contentAlignment = Alignment.Center
+        ) {
+
+            Box(
                 modifier = Modifier
                     .fillMaxWidth()
                     .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp)),
-                color = ElectricCyan,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-        } else if (phase == GamePhase.RECALL) {
-            // Selection progress bar
-            val progress = (selectedCount.toFloat() / targetCount.coerceAtLeast(1)).coerceIn(0f, 1f)
-            LinearProgressIndicator(
-                progress = { progress },
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(6.dp)
-                    .clip(RoundedCornerShape(3.dp)),
-                color = MaterialTheme.colorScheme.primary,
-                trackColor = MaterialTheme.colorScheme.surfaceVariant
-            )
-        } else {
-            Spacer(modifier = Modifier.height(6.dp))
+                    .alpha(
+                        if (isProgressVisible) {
+                            1f
+                        } else {
+                            0f
+                        }
+                    )
+                    .clip(
+                        RoundedCornerShape(50.dp)
+                    )
+                    .background(
+                        MaterialTheme.colorScheme
+                            .surfaceVariant
+                            .copy(alpha = 0.7f)
+                    )
+            ) {
+
+                Box(
+                    modifier = Modifier
+                        .fillMaxWidth(progress)
+                        .height(6.dp)
+                        .clip(
+                            RoundedCornerShape(50.dp)
+                        )
+                        .background(
+                            if (
+                                phase == GamePhase.RECALL &&
+                                secondsLeft <= 3
+                            ) {
+                                CoralError
+                            } else {
+                                instructionColor
+                            }
+                        )
+                )
+            }
         }
     }
 }

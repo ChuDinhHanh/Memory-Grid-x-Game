@@ -2,9 +2,11 @@ package com.example.ui.components
 
 import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.tween
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -26,6 +28,7 @@ import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -33,9 +36,12 @@ import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.vector.ImageVector
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.example.R
 import com.example.data.repository.MemoryGridRepository
 import com.example.ui.theme.ElectricCyan
 import com.example.ui.theme.MintSuccess
@@ -197,51 +203,25 @@ fun StatCard(
     }
 }
 
+
+
 @Composable
 fun PrimaryButton(
     text: String,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     enabled: Boolean = true,
-    gradientColors: List<Color> = listOf(ElectricCyan, VividViolet),
-    leadingIcon: @Composable (() -> Unit)? = null
 ) {
-    Surface(
+    Image(
+        painter = painterResource(id = R.drawable.main_play),
+        contentDescription = text,
+        contentScale = ContentScale.Fit,
         modifier = modifier
             .fillMaxWidth()
-            .height(56.dp)
-            .shadow(5.dp, RoundedCornerShape(18.dp))
-            .clip(RoundedCornerShape(18.dp))
-            .clickable(enabled = enabled, onClick = onClick),
-        shape = RoundedCornerShape(18.dp),
-        border = androidx.compose.foundation.BorderStroke(2.dp, Color.White.copy(alpha = 0.9f)),
-        color = Color.Transparent
-    ) {
-        Box(
-            modifier = Modifier
-                .fillMaxWidth()
-                .height(56.dp)
-                .background(
-                    if (enabled) Brush.verticalGradient(gradientColors)
-                    else Brush.horizontalGradient(listOf(Color.Gray, Color.DarkGray))
-                ),
-            contentAlignment = Alignment.Center
-        ) {
-            Row(
-                verticalAlignment = Alignment.CenterVertically,
-                horizontalArrangement = Arrangement.Center
-            ) {
-                leadingIcon?.invoke()
-                if (leadingIcon != null) Spacer(modifier = Modifier.width(8.dp))
-                Text(
-                    text = text,
-                    style = MaterialTheme.typography.titleMedium.copy(
-                        fontWeight = FontWeight.ExtraBold,
-                        color = Color.White,
-                        letterSpacing = 1.sp
-                    )
-                )
-            }
-        }
-    }
+            .clickable(
+                enabled = enabled, interactionSource = remember {
+                    MutableInteractionSource()
+                }, indication = null, onClick = onClick
+            )
+    )
 }

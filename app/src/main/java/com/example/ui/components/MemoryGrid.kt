@@ -1,3 +1,4 @@
+
 package com.example.ui.components
 
 import androidx.compose.animation.animateColorAsState
@@ -49,6 +50,7 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import com.example.data.model.CellVisualState
 import com.example.data.model.GamePhase
+import com.example.data.model.RoundEvaluationResult
 import com.example.ui.theme.AmberWarning
 import com.example.ui.theme.CoralError
 import com.example.ui.theme.ElectricCyan
@@ -59,11 +61,59 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
 import androidx.compose.material3.Text
 
+/**
+ * Pure function that derives the visual state of a single cell from the raw
+ * game state values. This used to live in the ViewModel as
+ * `getCellVisualState()` and was read through a closure that captured
+ * `_uiState.value` directly. Because that read was never tracked by
+ * Compose's snapshot system, MemoryGrid could stop recomposing mid-sequence
+ * (only ever showing the first revealed cell). Moving this logic to a plain
+ * function fed by real composable parameters (Set<Int>, Int?, etc. — all
+ * "unstable" types to the Compose compiler) guarantees recomposition on
+ * every change.
+ */
+private fun computeCellVisualState(
+    phase: GamePhase,
+    cellIndex: Int,
+    currentlyLitCell: Int?,
+    revealedSequenceIndices: Set<Int>,
+    selectedCells: Set<Int>,
+    targetPattern: List<Int>,
+    evaluationResult: RoundEvaluationResult?
+): CellVisualState {
+    return when (phase) {
+        GamePhase.MEMORIZE -> when {
+            cellIndex == currentlyLitCell -> CellVisualState.LIGHTING_UP
+            cellIndex in revealedSequenceIndices -> CellVisualState.HIGHLIGHTED
+            else -> CellVisualState.IDLE
+        }
+        GamePhase.RECALL -> {
+            if (cellIndex in selectedCells) CellVisualState.SELECTED else CellVisualState.IDLE
+        }
+        GamePhase.EVALUATING, GamePhase.SUCCESS -> {
+            if (cellIndex in targetPattern) CellVisualState.CORRECT_REVEAL else CellVisualState.IDLE
+        }
+        GamePhase.FAILURE, GamePhase.GAME_OVER, GamePhase.RESULT -> {
+            when {
+                evaluationResult != null && cellIndex in evaluationResult.wrongIndices -> CellVisualState.WRONG_REVEAL
+                evaluationResult != null && cellIndex in evaluationResult.correctIndices -> CellVisualState.CORRECT_REVEAL
+                evaluationResult != null && cellIndex in evaluationResult.missedIndices -> CellVisualState.MISSED_REVEAL
+                else -> CellVisualState.IDLE
+            }
+        }
+        else -> CellVisualState.IDLE
+    }
+}
+
 @Composable
 fun MemoryGrid(
     gridSize: Int,
     phase: GamePhase,
-    getCellState: (Int) -> CellVisualState,
+    revealedSequenceIndices: Set<Int>,
+    currentlyLitCell: Int?,
+    selectedCells: Set<Int>,
+    targetPattern: List<Int>,
+    evaluationResult: RoundEvaluationResult?,
     onCellClick: (Int) -> Unit,
     modifier: Modifier = Modifier,
     activeStepNumberMap: Map<Int, Int> = emptyMap()
@@ -125,7 +175,15 @@ fun MemoryGrid(
                 ) {
                     for (col in 0 until gridSize) {
                         val index = row * gridSize + col
-                        val state = getCellState(index)
+                        val state = computeCellVisualState(
+                            phase = phase,
+                            cellIndex = index,
+                            currentlyLitCell = currentlyLitCell,
+                            revealedSequenceIndices = revealedSequenceIndices,
+                            selectedCells = selectedCells,
+                            targetPattern = targetPattern,
+                            evaluationResult = evaluationResult
+                        )
                         val stepNumber = activeStepNumberMap[index]
 
                         MemoryCell(
