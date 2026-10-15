@@ -356,7 +356,7 @@ fun DailyChallengeScreen(
             // REWARD BANNER
             // ====================================================
             item {
-                GlassCard(modifier = Modifier.fillMaxWidth()) {
+                GlassCard(modifier = Modifier.fillMaxWidth().padding(bottom = 100.dp)) {
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()

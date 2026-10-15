@@ -1,9 +1,17 @@
 package com.example.Utility
 
+
 import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
+import com.example.BuildConfig
+import com.google.firebase.Firebase
+import com.google.firebase.remoteconfig.remoteConfig
+import com.google.firebase.remoteconfig.remoteConfigSettings
 
 /**
  * Hàm mở đường dẫn Privacy Policy trên trình duyệt
@@ -42,3 +50,4 @@ fun shareGame(context: Context) {
         Toast.makeText(context, "Unable to share", Toast.LENGTH_SHORT).show()
     }
 }
+

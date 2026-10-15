@@ -2,6 +2,7 @@ package com.example
 
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
@@ -11,8 +12,12 @@ import androidx.compose.animation.slideInVertically
 import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
@@ -24,6 +29,8 @@ import androidx.compose.ui.graphics.vector.ImageVector
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.res.painterResource
+import androidx.compose.ui.unit.dp
+import androidx.lifecycle.lifecycleScope
 import androidx.lifecycle.viewmodel.compose.viewModel
 import androidx.navigation.NavGraph.Companion.findStartDestination
 import androidx.navigation.compose.NavHost
@@ -33,6 +40,8 @@ import androidx.navigation.compose.rememberNavController
 import com.example.Utility.openPrivacyPolicy
 import com.example.Utility.shareGame
 import com.example.data.model.GameMode
+import com.example.engine.AdsConfig
+import com.example.engine.BannerAd
 import com.example.engine.RewardedAdManager
 import com.example.ui.components.CustomBottomBar
 import com.example.ui.screens.AchievementsScreen
@@ -45,6 +54,10 @@ import com.example.ui.screens.StatisticsScreen
 import com.example.ui.theme.MemoryGridTheme
 import com.example.ui.theme.ThemeSetting
 import com.example.ui.viewmodel.MemoryGridViewModel
+import com.google.android.gms.ads.MobileAds
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+
 
 class MainActivity : ComponentActivity() {
     private lateinit var rewardedAdManager: RewardedAdManager
@@ -52,8 +65,26 @@ class MainActivity : ComponentActivity() {
     @RequiresApi(Build.VERSION_CODES.O)
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
-        rewardedAdManager = RewardedAdManager(this).also { it.initializeAndLoad() }
         enableEdgeToEdge()
+        // Khởi tạo manager trước khi tải quảng cáo.
+        rewardedAdManager = RewardedAdManager(this)
+
+        // Đọc cấu hình quảng cáo từ Firebase.
+        AdsConfig.fetch()
+
+        // Khởi tạo Google Mobile Ads SDK trên background thread.
+        lifecycleScope.launch(Dispatchers.IO) {
+            MobileAds.initialize(this@MainActivity) { status ->
+                Log.d(
+                    "RewardedAd", "Mobile Ads SDK initialized: $status"
+                )
+
+                // Chuyển về main thread trước khi tải quảng cáo.
+                lifecycleScope.launch(Dispatchers.Main) {
+                    rewardedAdManager.load()
+                }
+            }
+        }
         setContent {
             val viewModel: MemoryGridViewModel = viewModel()
             val profile by viewModel.playerProfile.collectAsState()
@@ -66,8 +97,7 @@ class MainActivity : ComponentActivity() {
 
             MemoryGridTheme(themeSetting = themeSetting) {
                 Surface(
-                    modifier = Modifier.fillMaxSize(),
-                    color = Color.Transparent
+                    modifier = Modifier.fillMaxSize(), color = Color.Transparent
                 ) {
                     MemoryGridApp(viewModel = viewModel, rewardedAdManager = rewardedAdManager)
                 }
@@ -92,6 +122,9 @@ fun MemoryGridApp(viewModel: MemoryGridViewModel, rewardedAdManager: RewardedAdM
 
     val showBottomBar = currentRoute != "splash" && currentRoute != "game"
 
+    // Điều kiện hiển thị banner ở trên đầu
+    val showTopBanner = currentRoute != "splash" && currentRoute != "game"
+
     Box(
         modifier = Modifier.fillMaxSize()
     ) {
@@ -105,22 +138,30 @@ fun MemoryGridApp(viewModel: MemoryGridViewModel, rewardedAdManager: RewardedAdM
             )
         }
 
-        Scaffold(
-            modifier = Modifier.fillMaxSize(),
-            containerColor = Color.Transparent,
+        if(showTopBanner){
+            Column(
+                modifier = Modifier
+                    .statusBarsPadding()
+                    .fillMaxWidth()
+            ) {
+                BannerAd()
+                Box(modifier = Modifier.padding(bottom = 12.dp)) // Khoảng cách chuẩn 12dp xuống nội dung
+            }
+        }
+
+
+        Scaffold(modifier = Modifier.fillMaxSize(), containerColor = Color.Transparent,
             bottomBar = {
-                AnimatedVisibility(
-                    visible = showBottomBar,
-                    enter = slideInVertically(
-                        initialOffsetY = { it }
-                    ),
-                    exit = slideOutVertically(
-                        targetOffsetY = { it }
-                    ),
-                ) {
+            AnimatedVisibility(
+                visible = showBottomBar,
+                enter = slideInVertically(
+                    initialOffsetY = { it }),
+                exit = slideOutVertically(
+                    targetOffsetY = { it }),
+            ) {
+                Column {
                     CustomBottomBar(
-                        currentRoute = currentRoute,
-                        onNavigate = { route ->
+                        currentRoute = currentRoute, onNavigate = { route ->
                             if (currentRoute != route) {
                                 navController.navigate(route) {
                                     popUpTo(
@@ -132,17 +173,15 @@ fun MemoryGridApp(viewModel: MemoryGridViewModel, rewardedAdManager: RewardedAdM
                                     restoreState = true
                                 }
                             }
-                        }
-                    )
+                        })
                 }
             }
-        ) { innerPadding ->
+        }) { innerPadding ->
 
             NavHost(
                 navController = navController,
                 startDestination = "splash",
-                modifier = Modifier
-                    .fillMaxSize()
+                modifier = Modifier.fillMaxSize()
             ) {
                 composable("splash") {
                     Box(modifier = Modifier.fillMaxSize()) {
@@ -223,30 +262,24 @@ fun MemoryGridApp(viewModel: MemoryGridViewModel, rewardedAdManager: RewardedAdM
                     LeaderboardScreen(
                         profile = profile,
                         topScores = topScores,
-                        onUpdatePlayerName = { viewModel.updatePlayerName(it) }
-                    )
+                        onUpdatePlayerName = { viewModel.updatePlayerName(it) })
                 }
 
                 composable("daily") {
                     DailyChallengeScreen(
-                        profile = profile,
-                        onBack = { navController.popBackStack() }
-                    )
+                        profile = profile, onBack = { navController.popBackStack() })
                 }
 
                 composable("stats") {
                     StatisticsScreen(
                         profile = profile,
                         recentGames = recentGames,
-                        onBack = { navController.popBackStack() }
-                    )
+                        onBack = { navController.popBackStack() })
                 }
 
                 composable("achievements") {
                     AchievementsScreen(
-                        achievements = achievements,
-                        onBack = { navController.popBackStack() }
-                    )
+                        achievements = achievements, onBack = { navController.popBackStack() })
                 }
             }
         }
@@ -254,8 +287,5 @@ fun MemoryGridApp(viewModel: MemoryGridViewModel, rewardedAdManager: RewardedAdM
 }
 
 data class BottomNavItem(
-    val route: String,
-    val title: String,
-    val image: ImageVector,
-    val testTag: String
+    val route: String, val title: String, val image: ImageVector, val testTag: String
 )

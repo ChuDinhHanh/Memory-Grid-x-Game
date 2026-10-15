@@ -1,4 +1,3 @@
-import com.google.gms.googleservices.GoogleServicesPlugin.MissingGoogleServicesStrategy
 
 plugins {
     alias(libs.plugins.android.application)
@@ -7,11 +6,13 @@ plugins {
     alias(libs.plugins.google.devtools.ksp)
     alias(libs.plugins.roborazzi)
     alias(libs.plugins.secrets)
+    alias(libs.plugins.google.services)
+    alias(libs.plugins.google.firebase.crashlytics)
 }
 
 android {
     namespace = "com.example"
-    compileSdk = 35 // Giữ ở mức ổn định 35 để tránh yêu cầu API 37
+    compileSdk = 35
 
     defaultConfig {
         applicationId = "com.example.memorygrid.kxpzq"
@@ -25,12 +26,15 @@ android {
 
     signingConfigs {
         create("release") {
-            val keystorePath = System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
+            val keystorePath =
+                System.getenv("KEYSTORE_PATH") ?: "${rootDir}/my-upload-key.jks"
+
             storeFile = file(keystorePath)
             storePassword = System.getenv("STORE_PASSWORD")
             keyAlias = "upload"
             keyPassword = System.getenv("KEY_PASSWORD")
         }
+
         create("debugConfig") {
             storeFile = file("${System.getProperty("user.home")}/.android/debug.keystore")
             storePassword = "android"
@@ -43,11 +47,15 @@ android {
         release {
             isCrunchPngs = false
             isMinifyEnabled = false
-            proguardFiles(getDefaultProguardFile("proguard-android-optimize.txt"), "proguard-rules.pro")
+            proguardFiles(
+                getDefaultProguardFile("proguard-android-optimize.txt"),
+                "proguard-rules.pro"
+            )
             signingConfig = signingConfigs.getByName("release")
         }
-        debug { 
-            signingConfig = signingConfigs.getByName("debugConfig") 
+
+        debug {
+            signingConfig = signingConfigs.getByName("debugConfig")
         }
     }
 
@@ -56,11 +64,12 @@ android {
         targetCompatibility = JavaVersion.VERSION_11
     }
 
-    // Sửa lỗi deprecated kotlinOptions
     kotlin {
         compilerOptions {
             jvmTarget.set(org.jetbrains.kotlin.gradle.dsl.JvmTarget.JVM_11)
-            freeCompilerArgs.add("-Xopt-in=androidx.compose.material3.ExperimentalMaterial3Api")
+            freeCompilerArgs.add(
+                "-Xopt-in=androidx.compose.material3.ExperimentalMaterial3Api"
+            )
         }
     }
 
@@ -77,7 +86,10 @@ secrets {
 }
 
 dependencies {
+    // Compose BOM
     implementation(platform(libs.androidx.compose.bom))
+
+    // AndroidX and Compose
     implementation(libs.androidx.activity.compose)
     implementation(libs.androidx.compose.material.icons.core)
     implementation(libs.androidx.compose.material.icons.extended)
@@ -85,14 +97,19 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
+    implementation(libs.androidx.compose.runtime)
     implementation(libs.androidx.core.ktx)
     implementation(libs.androidx.core.splashscreen)
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.runtime.ktx)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.navigation.compose)
+
+    // Room
     implementation(libs.androidx.room.ktx)
     implementation(libs.androidx.room.runtime)
+
+    // Networking and JSON
     implementation(libs.converter.moshi)
     implementation(libs.kotlinx.coroutines.android)
     implementation(libs.kotlinx.coroutines.core)
@@ -100,30 +117,46 @@ dependencies {
     implementation(libs.moshi.kotlin)
     implementation(libs.okhttp)
     implementation(libs.retrofit)
-    implementation(libs.androidx.compose.runtime)
-    implementation("com.google.android.gms:play-services-ads:23.0.0")
 
+    // Firebase BoM must precede Firebase SDK dependencies
+    implementation(platform(libs.firebase.bom))
+    implementation(libs.firebase.analytics)
+    implementation(libs.firebase.auth)
+    implementation(libs.firebase.firestore)
+    implementation(libs.firebase.crashlytics)
+    implementation(libs.firebase.config)
+
+    // Google Ads - declared only once
+    implementation(libs.play.services.ads)
+
+    // Google Sign-In
+    implementation(libs.androidx.credentials)
+    implementation(libs.androidx.credentials.play.services.auth)
+    implementation(libs.googleid)
+
+    // Unit tests
     testImplementation(libs.androidx.compose.ui.test.junit4)
     testImplementation(libs.androidx.core.testing)
     testImplementation(libs.androidx.junit)
     testImplementation(libs.junit)
-    // Sửa tên thư viện test để tránh xung đột
     testImplementation(libs.kotlinx.coroutines.test.lib)
     testImplementation(libs.robolectric)
     testImplementation(libs.roborazzi)
     testImplementation(libs.roborazzi.compose)
     testImplementation(libs.roborazzi.junit.rule)
-    
+
+    // Instrumented tests
     androidTestImplementation(platform(libs.androidx.compose.bom))
     androidTestImplementation(libs.androidx.compose.ui.test.junit4)
     androidTestImplementation(libs.androidx.espresso.core)
     androidTestImplementation(libs.androidx.junit)
-    // Khai báo đúng tên runner từ catalog
     androidTestImplementation(libs.androidx.test.runner)
-    
+
+    // Debug tools
     debugImplementation(libs.androidx.compose.ui.test.manifest)
     debugImplementation(libs.androidx.compose.ui.tooling)
-    
-    "ksp"(libs.androidx.room.compiler)
-    "ksp"(libs.moshi.kotlin.codegen)
+
+    // KSP processors
+    ksp(libs.androidx.room.compiler)
+    ksp(libs.moshi.kotlin.codegen)
 }

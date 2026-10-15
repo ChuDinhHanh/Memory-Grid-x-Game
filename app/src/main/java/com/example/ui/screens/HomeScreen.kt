@@ -147,7 +147,7 @@ fun HomeScreen(
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                    .padding(innerPadding)
+                .padding(innerPadding)
                     .padding(horizontal = 20.dp),
                 contentPadding = PaddingValues(top = 16.dp, bottom = 28.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -191,7 +191,6 @@ fun HomeScreen(
                                 .size(44.dp)
                                 .clip(CircleShape)
                                 .background(Color.White.copy(alpha = 0.10f))
-                                .border(1.dp, Color.White.copy(alpha = 0.25f), CircleShape)
                                 .testTag("home_settings_button")
                         ) {
                             Image(

@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "413768720181",
+    "project_id": "memorygridgame-f2e1c",
+    "storage_bucket": "memorygridgame-f2e1c.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:413768720181:android:4353721b36bfe1b18eb67c",
+        "android_client_info": {
+          "package_name": "com.example.memorygrid.kxpzq"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA0lpjHBcj4vFH9p4gjwxhoA9CZFbQAg7Q"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
