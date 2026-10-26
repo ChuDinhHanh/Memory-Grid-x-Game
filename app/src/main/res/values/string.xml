@@ -247,4 +247,15 @@
     <string name="home_error_open_link">Cannot open link</string>
     <string name="home_error_share">Cannot share app</string>
 
+    <!-- Avatar Selection Dialog -->
+    <string name="avatar_dialog_title">Select Avatar</string>
+    <string name="avatar_dialog_close">Close</string>
+
+    <!-- Leaderboard Screen Header & Subtitles -->
+    <string name="leaderboard_subtitle">Honoring supreme memories</string>
+    <string name="leaderboard_personal_best_prefix">Personal Best: </string>
+
+    <!-- Leaderboard Row -->
+    <string name="leaderboard_pts_label">pts</string>
+
 </resources>

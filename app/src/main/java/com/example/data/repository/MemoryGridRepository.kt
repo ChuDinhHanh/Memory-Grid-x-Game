@@ -32,12 +32,22 @@ class MemoryGridRepository(private val dao: MemoryGridDao) {
         return dateFormat.format(cal.time)
     }
 
+    suspend fun updatePlayerAvatar(newAvatar: String) {
+        val profile = dao.getPlayerProfileSync() ?: PlayerProfileEntity()
+        dao.insertOrUpdateProfile(profile.copy(avatar = newAvatar))
+    }
+
     suspend fun ensureInitialized() {
         val currentProfile = dao.getPlayerProfileSync()
         if (currentProfile == null) {
+            // Tự động sinh tên ngẫu nhiên dạng Player_XXXX cho lần đầu tiên
+            val randomSuffix = (1000..9999).random()
+            val autoPlayerName = "Player_$randomSuffix"
+
             dao.insertOrUpdateProfile(
                 PlayerProfileEntity(
                     id = 1,
+                    playerName = autoPlayerName, // Gán tên tự sinh ở đây
                     playerLevel = 1,
                     currentXp = 0,
                     currentStreak = 0,

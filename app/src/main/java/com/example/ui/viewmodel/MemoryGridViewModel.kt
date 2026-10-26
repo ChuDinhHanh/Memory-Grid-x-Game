@@ -3,6 +3,9 @@ package com.example.ui.viewmodel
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import androidx.work.ExistingPeriodicWorkPolicy
+import androidx.work.PeriodicWorkRequestBuilder
+import androidx.work.WorkManager
 import com.example.data.local.MemoryGridDatabase
 import com.example.data.local.PlayerProfileEntity
 import com.example.data.model.DifficultyConfig
@@ -10,11 +13,14 @@ import com.example.data.model.GameEndSummary
 import com.example.data.model.GameMode
 import com.example.data.model.GamePhase
 import com.example.data.model.RoundEvaluationResult
+import com.example.data.repository.LeaderboardRepository
 import com.example.data.repository.MemoryGridRepository
 import com.example.engine.AudioHapticService
 import com.example.engine.DifficultyEngine
 import com.example.engine.PatternGenerator
 import com.example.engine.ScoringEngine
+import com.example.worker.SocialMediaCheckWorker
+import com.google.firebase.firestore.FirebaseFirestore
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -23,9 +29,12 @@ import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.stateIn
 import kotlinx.coroutines.launch
+import kotlinx.coroutines.tasks.await
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import java.util.concurrent.TimeUnit
+
 
 data class GameUiState(
     val phase: GamePhase = GamePhase.IDLE,
@@ -70,10 +79,13 @@ private val successMessages = listOf(
 )
 
 class MemoryGridViewModel(application: Application) : AndroidViewModel(application) {
-
+    private val leaderboardRepo = LeaderboardRepository()
     private val db = MemoryGridDatabase.getDatabase(application)
     private val repository = MemoryGridRepository(db.memoryGridDao())
     val audioHaptic = AudioHapticService(application)
+
+    val firebaseLeaderboard = leaderboardRepo.getTopScores()
+        .stateIn(viewModelScope, SharingStarted.WhileSubscribed(5000), emptyList())
 
     private val _uiState = MutableStateFlow(GameUiState())
     val uiState: StateFlow<GameUiState> = _uiState.asStateFlow()
@@ -126,8 +138,23 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
                 if (profile != null) {
                     audioHaptic.soundEnabled = profile.soundEnabled
                     audioHaptic.hapticsEnabled = profile.hapticsEnabled
+                    if (profile.bestScore > 0) {
+                        syncOfflineScoreToCloud()
+                    }
                 }
             }
+        }
+        viewModelScope.launch {
+            val periodicWorkRequest = PeriodicWorkRequestBuilder<SocialMediaCheckWorker>(
+                30, TimeUnit.MINUTES // Kiểm tra mỗi 30 phút một lần
+            ).build()
+
+            // Dùng 'application' thay vì 'applicationContext'
+            WorkManager.getInstance(application).enqueueUniquePeriodicWork(
+                "SocialMediaCheckJob",
+                ExistingPeriodicWorkPolicy.KEEP,
+                periodicWorkRequest
+            )
         }
     }
 
@@ -538,12 +565,58 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
         _uiState.value = _uiState.value.copy(
             phase = GamePhase.RESULT, gameEndSummary = summary
         )
+
+        viewModelScope.launch {
+            try {
+                val deviceId = android.provider.Settings.Secure.ANDROID_ID
+                leaderboardRepo.submitScore(
+                    userId = deviceId,
+                    playerName = currentProfile?.playerName ?: "Player",
+                    score = finalScore,
+                    avatar = currentProfile?.avatar ?: "🐶"
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     fun exitToHome() {
         phaseTimerJob?.cancel()
         recallTimerJob?.cancel()
         _uiState.value = GameUiState(phase = GamePhase.IDLE)
+    }
+
+    fun updatePlayerAvatar(newAvatar: String) {
+        viewModelScope.launch {
+            // 1. Lưu xuống Room database cục bộ
+            repository.updatePlayerAvatar(newAvatar)
+
+            // 2. Đẩy lên Firebase Firestore ngay lập tức (giữ nguyên điểm số và tên hiện tại)
+            try {
+                val currentProfile = playerProfile.value
+                val deviceId = android.provider.Settings.Secure.ANDROID_ID
+                val currentScore = currentProfile?.bestScore ?: 0
+                val currentName = currentProfile?.playerName ?: "Player"
+
+                // Gửi kèm avatar lên Firestore (collection leaderboard)
+                val docRef =
+                    FirebaseFirestore.getInstance().collection("leaderboard").document(deviceId)
+
+                // Lấy dữ liệu cũ hoặc tạo map mới bao gồm avatar
+                val updates = mapOf(
+                    "userId" to deviceId,
+                    "playerName" to currentName,
+                    "score" to currentScore,
+                    "avatar" to newAvatar, // Cập nhật avatar mới lên cloud
+                    "timestamp" to System.currentTimeMillis()
+                )
+                docRef.set(updates, com.google.firebase.firestore.SetOptions.merge()).await()
+
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
+        }
     }
 
     fun continueCurrentLevelAfterReward() {
@@ -574,7 +647,6 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
     }
 
 
-
     fun setThemeSetting(theme: String) {
         val profile = playerProfile.value ?: return
         viewModelScope.launch {
@@ -586,7 +658,25 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
 
     fun updatePlayerName(newName: String) {
         viewModelScope.launch {
+            // 1. Cập nhật tên trong Room database cục bộ
             repository.updatePlayerName(newName)
+
+            // 2. Đồng thời đẩy tên mới lên Firebase Leaderboard ngay lập tức với điểm hiện tại
+            try {
+                val currentProfile = playerProfile.value
+                val deviceId = android.provider.Settings.Secure.ANDROID_ID
+                val currentScore = currentProfile?.bestScore ?: 0
+                val currentAvatar = currentProfile?.avatar ?: "🐶"
+
+                leaderboardRepo.submitScore(
+                    userId = deviceId,
+                    playerName = newName,
+                    score = currentScore,
+                    avatar = currentAvatar
+                )
+            } catch (e: Exception) {
+                e.printStackTrace()
+            }
         }
     }
 
@@ -701,6 +791,27 @@ class MemoryGridViewModel(application: Application) : AndroidViewModel(applicati
                 haptics = newHapticsState,
                 theme = profile.themeSetting
             )
+        }
+    }
+
+    // Bạn có thể gọi hàm này khi app khởi động hoặc khi có kết nối mạng trở lại
+    fun syncOfflineScoreToCloud() {
+        viewModelScope.launch {
+            val currentProfile = playerProfile.value
+            if (currentProfile != null && currentProfile.bestScore > 0) {
+                try {
+                    val deviceId = android.provider.Settings.Secure.ANDROID_ID
+                    // Gọi submitScore đã có logic kiểm tra maxOf ở LeaderboardRepository
+                    leaderboardRepo.submitScore(
+                        userId = deviceId,
+                        playerName = currentProfile.playerName,
+                        score = currentProfile.bestScore,
+                        avatar = currentProfile.avatar
+                    )
+                } catch (e: Exception) {
+                    e.printStackTrace()
+                }
+            }
         }
     }
 

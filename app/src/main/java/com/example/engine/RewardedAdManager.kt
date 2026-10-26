@@ -1,82 +1,3 @@
-//package com.example.engine
-//
-//import android.app.Activity
-//import android.widget.Toast
-//import androidx.compose.runtime.getValue
-//import androidx.compose.runtime.mutableStateOf
-//import androidx.compose.runtime.setValue
-//import com.google.android.gms.ads.AdError
-//import com.google.android.gms.ads.AdRequest
-//import com.google.android.gms.ads.FullScreenContentCallback
-//import com.google.android.gms.ads.LoadAdError
-//import com.google.android.gms.ads.rewarded.RewardedAd
-//import com.google.android.gms.ads.rewarded.RewardedAdLoadCallback
-//
-//class RewardedAdManager(private val activity: Activity) {
-//
-//    private var rewardedAd: RewardedAd? = null
-//    private var isLoading = false
-//
-//    /** UI đọc biến này để chỉ hiện nút "Xem video" khi quảng cáo đã sẵn sàng. */
-//    var isReady by mutableStateOf(false)
-//        private set
-//
-//    fun load() {
-//        if (isLoading || rewardedAd != null) return
-//        isLoading = true
-//        RewardedAd.load(
-//            activity,
-//            AdIds.rewarded(),
-//            AdRequest.Builder().build(),
-//            object : RewardedAdLoadCallback() {
-//                override fun onAdLoaded(ad: RewardedAd) {
-//                    isLoading = false
-//                    rewardedAd = ad
-//                    isReady = true
-//                }
-//
-//                override fun onAdFailedToLoad(error: LoadAdError) {
-//                    isLoading = false
-//                    rewardedAd = null
-//                    isReady = false
-//                }
-//            }
-//        )
-//    }
-//
-//    fun show(onRewardEarned: () -> Unit) {
-//        if (!AdsConfig.reviveEnabled) return
-//
-//        val ad = rewardedAd
-//        if (ad == null) {
-//            Toast.makeText(activity, "Quảng cáo đang tải, thử lại sau ít giây.", Toast.LENGTH_SHORT).show()
-//            load()
-//            return
-//        }
-//
-//        rewardedAd = null
-//        isReady = false
-//        var earnedReward = false
-//
-//        ad.fullScreenContentCallback = object : FullScreenContentCallback() {
-//            override fun onAdDismissedFullScreenContent() {
-//                if (earnedReward) onRewardEarned()
-//                else Toast.makeText(activity, "Hãy xem hết quảng cáo để hồi sinh.", Toast.LENGTH_SHORT).show()
-//                load()
-//            }
-//
-//            override fun onAdFailedToShowFullScreenContent(adError: AdError) {
-//                Toast.makeText(activity, "Không thể phát quảng cáo. Vui lòng thử lại.", Toast.LENGTH_SHORT).show()
-//                load()
-//            }
-//        }
-//
-//        ad.show(activity) { earnedReward = true }
-//    }
-//
-//}
-
-
 package com.example.engine
 
 import android.app.Activity
@@ -116,26 +37,53 @@ class RewardedAdManager(
 
     private var retryRunnable: Runnable? = null
 
-    fun load() {
+    /** Các callback đang chờ lần tải quảng cáo hiện tại kết thúc (thành công hoặc thất bại). */
+    private val pendingLoadCallbacks = mutableListOf<() -> Unit>()
+
+    private fun notifyLoadFinished() {
+        if (pendingLoadCallbacks.isEmpty()) return
+        val callbacks = pendingLoadCallbacks.toList()
+        pendingLoadCallbacks.clear()
+        callbacks.forEach { callback ->
+            runCatching { callback() }
+                .onFailure { Log.w(TAG, "onFinished callback failed", it) }
+        }
+    }
+
+    /**
+     * Tải quảng cáo thưởng. [onFinished] được gọi đúng một lần khi việc tải kết thúc:
+     * tải xong, tải lỗi, hoặc không cần tải (đã có sẵn / bị tắt / Activity không hợp lệ).
+     * Splash dùng callback này để biết lúc nào có thể chuyển sang Home.
+     */
+    fun load(onFinished: () -> Unit = {}) {
         if (!AdsConfig.reviveEnabled) {
             Log.d(TAG, "LOAD SKIPPED: rewarded ads disabled by Remote Config")
+            onFinished()
             return
         }
 
         if (activity.isFinishing || activity.isDestroyed) {
             Log.w(TAG, "LOAD SKIPPED: Activity is not valid")
+            onFinished()
             return
         }
 
-        if (isLoading || rewardedAd != null || isShowingAd) {
+        if (rewardedAd != null || isShowingAd) {
             Log.d(
                 TAG,
-                "LOAD SKIPPED: isLoading=$isLoading, " +
-                        "isReady=${rewardedAd != null}, isShowingAd=$isShowingAd"
+                "LOAD SKIPPED: isReady=${rewardedAd != null}, isShowingAd=$isShowingAd"
             )
+            onFinished()
             return
         }
 
+        if (isLoading) {
+            Log.d(TAG, "LOAD SKIPPED: already loading, waiting for result")
+            pendingLoadCallbacks.add(onFinished)
+            return
+        }
+
+        pendingLoadCallbacks.add(onFinished)
         cancelRetry()
         isLoading = true
         isReady = false
@@ -156,6 +104,7 @@ class RewardedAdManager(
                     retryDelayMs = RETRY_DELAY_MS
 
                     Log.d(TAG, "LOAD SUCCESS")
+                    notifyLoadFinished()
 
                     ad.fullScreenContentCallback =
                         object : FullScreenContentCallback() {
@@ -216,6 +165,7 @@ class RewardedAdManager(
                                 "responseInfo=${error.responseInfo}"
                     )
 
+                    notifyLoadFinished()
                     scheduleRetry()
                 }
             }

@@ -2,21 +2,8 @@ package com.example.ui.screens
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
-import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.PaddingValues
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.Spacer
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBarsPadding
-import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.layout.*
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.shape.CircleShape
@@ -24,21 +11,8 @@ import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Edit
 import androidx.compose.material.icons.filled.Leaderboard
-import androidx.compose.material.icons.filled.MilitaryTech
-import androidx.compose.material.icons.filled.Person
-import androidx.compose.material3.AlertDialog
-import androidx.compose.material3.Icon
-import androidx.compose.material3.IconButton
-import androidx.compose.material3.OutlinedTextField
-import androidx.compose.material3.OutlinedTextFieldDefaults
-import androidx.compose.material3.Scaffold
-import androidx.compose.material3.Text
-import androidx.compose.material3.TextButton
-import androidx.compose.runtime.Composable
-import androidx.compose.runtime.getValue
-import androidx.compose.runtime.mutableStateOf
-import androidx.compose.runtime.remember
-import androidx.compose.runtime.setValue
+import androidx.compose.material3.*
+import androidx.compose.runtime.*
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -52,17 +26,16 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.R
-import com.example.data.local.GameHistoryEntity
 import com.example.data.local.PlayerProfileEntity
+import com.example.data.repository.LeaderboardEntry
+import com.example.ui.components.AvatarSelectionDialog
 import com.example.ui.theme.ElectricCyan
 import com.example.ui.theme.GoldStar
 
-// Same glass recipe as AchievementsScreen: white 15% -> 5% fill, white 28% -> 8% border.
-// `tint` lets a card pick up a subtle accent (current player, #1) without changing the look.
 @Composable
 private fun LiquidGlassCard(
     modifier: Modifier = Modifier,
-    shape: RoundedCornerShape = RoundedCornerShape(18.dp),
+    shape: RoundedCornerShape = RoundedCornerShape(20.dp),
     tint: Color = Color.White,
     content: @Composable () -> Unit
 ) {
@@ -73,17 +46,17 @@ private fun LiquidGlassCard(
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        if (isTinted) tint.copy(alpha = 0.18f) else Color.White.copy(alpha = 0.15f),
-                        if (isTinted) tint.copy(alpha = 0.06f) else Color.White.copy(alpha = 0.05f)
+                        if (isTinted) tint.copy(alpha = 0.22f) else Color.White.copy(alpha = 0.14f),
+                        if (isTinted) tint.copy(alpha = 0.08f) else Color.White.copy(alpha = 0.04f)
                     )
                 )
             )
             .border(
-                width = 1.dp,
+                width = 1.2.dp,
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        if (isTinted) tint.copy(alpha = 0.45f) else Color.White.copy(alpha = 0.28f),
-                        if (isTinted) tint.copy(alpha = 0.10f) else Color.White.copy(alpha = 0.08f)
+                        if (isTinted) tint.copy(alpha = 0.6f) else Color.White.copy(alpha = 0.35f),
+                        if (isTinted) tint.copy(alpha = 0.15f) else Color.White.copy(alpha = 0.08f)
                     )
                 ),
                 shape = shape
@@ -96,19 +69,31 @@ private fun LiquidGlassCard(
 @Composable
 fun LeaderboardScreen(
     profile: PlayerProfileEntity?,
-    topScores: List<GameHistoryEntity>,
+    topScores: List<LeaderboardEntry>,
     onUpdatePlayerName: (String) -> Unit,
-    modifier: Modifier = Modifier
+    onUpdateAvatar: (String) -> Unit,
+    modifier: Modifier = Modifier,
 ) {
+    var showAvatarDialog by remember { mutableStateOf(false) }
     var showNameDialog by remember { mutableStateOf(false) }
     val defaultName = stringResource(id = R.string.leaderboard_default_player_name)
     val currentPlayerName = profile?.playerName.takeUnless { it.isNullOrBlank() } ?: defaultName
+    val currentAvatar = profile?.avatar.takeUnless { it.isNullOrBlank() } ?: "🐶"
     var editNameText by remember { mutableStateOf(currentPlayerName) }
+
+    if (showAvatarDialog) {
+        AvatarSelectionDialog(
+            onDismiss = { showAvatarDialog = false },
+            onAvatarSelected = { selectedEmoji ->
+                onUpdateAvatar(selectedEmoji)
+            }
+        )
+    }
 
     if (showNameDialog) {
         AlertDialog(
             onDismissRequest = { showNameDialog = false },
-            containerColor = Color(0xFF1A1F4D),
+            containerColor = Color(0xFF161A3D),
             shape = RoundedCornerShape(24.dp),
             title = {
                 Text(
@@ -173,7 +158,6 @@ fun LeaderboardScreen(
         )
     }
 
-    // Transparent so the app-wide background shows through, exactly like AchievementsScreen.
     Scaffold(
         modifier = modifier.fillMaxSize(),
         containerColor = Color.Transparent,
@@ -187,150 +171,145 @@ fun LeaderboardScreen(
                 .navigationBarsPadding()
                 .padding(horizontal = 16.dp)
         ) {
-
             // HEADER
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(top = 12.dp, bottom = 16.dp),
+                    .padding(vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically
             ) {
-                Text(
-                    text = stringResource(id = R.string.leaderboard_title),
-                    modifier = Modifier.weight(1f),
-                    fontSize = 24.sp,
-                    fontWeight = FontWeight.Bold,
-                    color = Color.White,
-                    letterSpacing = (-0.5).sp
-                )
-                Icon(
-                    imageVector = Icons.Default.Leaderboard,
-                    contentDescription = null,
-                    tint = GoldStar,
-                    modifier = Modifier.size(26.dp)
-                )
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = stringResource(id = R.string.leaderboard_title),
+                        fontSize = 26.sp,
+                        fontWeight = FontWeight.Black,
+                        color = Color.White,
+                        letterSpacing = (-0.5).sp
+                    )
+                    Text(
+                        text = stringResource(id = R.string.leaderboard_subtitle),
+                        fontSize = 12.sp,
+                        color = Color.White.copy(alpha = 0.6f)
+                    )
+                }
+                Box(
+                    modifier = Modifier
+                        .size(42.dp)
+                        .clip(CircleShape)
+                        .background(GoldStar.copy(alpha = 0.15f)),
+                    contentAlignment = Alignment.Center
+                ) {
+                    Icon(
+                        imageVector = Icons.Default.Leaderboard,
+                        contentDescription = null,
+                        tint = GoldStar,
+                        modifier = Modifier.size(22.dp)
+                    )
+                }
             }
+
+            Spacer(modifier = Modifier.height(6.dp))
 
             LazyColumn(
                 modifier = Modifier
                     .fillMaxWidth()
                     .weight(1f),
-                contentPadding = PaddingValues(top = 2.dp, bottom = 120.dp),
-                verticalArrangement = Arrangement.spacedBy(10.dp)
+                contentPadding = PaddingValues(bottom = 100.dp),
+                verticalArrangement = Arrangement.spacedBy(12.dp)
             ) {
-
                 // PROFILE CARD
                 item {
-                    LiquidGlassCard(modifier = Modifier.fillMaxWidth()) {
+                    LiquidGlassCard(
+                        modifier = Modifier.fillMaxWidth(),
+                        tint = ElectricCyan
+                    ) {
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .padding(horizontal = 14.dp, vertical = 14.dp),
+                                .padding(16.dp),
                             verticalAlignment = Alignment.CenterVertically
                         ) {
                             Box(
                                 modifier = Modifier
-                                    .size(48.dp)
-                                    .clip(RoundedCornerShape(14.dp))
-                                    .background(ElectricCyan.copy(alpha = 0.16f))
+                                    .size(60.dp)
+                                    .clip(RoundedCornerShape(16.dp))
+                                    .background(
+                                        brush = Brush.radialGradient(
+                                            colors = listOf(ElectricCyan.copy(alpha = 0.4f), Color.Transparent)
+                                        )
+                                    )
                                     .border(
-                                        width = 1.dp,
-                                        color = ElectricCyan.copy(alpha = 0.35f),
-                                        shape = RoundedCornerShape(14.dp)
-                                    ),
+                                        width = 2.dp,
+                                        brush = Brush.linearGradient(listOf(ElectricCyan, Color.White)),
+                                        shape = RoundedCornerShape(16.dp)
+                                    )
+                                    .clickable { showAvatarDialog = true },
                                 contentAlignment = Alignment.Center
                             ) {
-                                Icon(
-                                    imageVector = Icons.Default.Person,
-                                    contentDescription = null,
-                                    tint = ElectricCyan,
-                                    modifier = Modifier.size(26.dp)
-                                )
+                                Text(text = currentAvatar, fontSize = 30.sp)
                             }
 
-                            Spacer(modifier = Modifier.width(12.dp))
+                            Spacer(modifier = Modifier.width(14.dp))
 
                             Column(modifier = Modifier.weight(1f)) {
-                                Row(verticalAlignment = Alignment.CenterVertically) {
+                                Row(
+                                    verticalAlignment = Alignment.CenterVertically,
+                                    horizontalArrangement = Arrangement.spacedBy(6.dp)
+                                ) {
                                     Text(
                                         text = currentPlayerName,
-                                        modifier = Modifier.weight(1f, fill = false),
-                                        fontSize = 16.sp,
+                                        fontSize = 17.sp,
                                         fontWeight = FontWeight.Bold,
                                         color = Color.White,
                                         maxLines = 1,
-                                        overflow = TextOverflow.Ellipsis
+                                        overflow = TextOverflow.Ellipsis,
+                                        modifier = Modifier.weight(1f, fill = false)
                                     )
-                                    IconButton(
-                                        onClick = {
-                                            editNameText = currentPlayerName
-                                            showNameDialog = true
-                                        },
+
+                                    Box(
                                         modifier = Modifier
-                                            .padding(start = 4.dp)
                                             .size(28.dp)
-                                            .testTag("edit_player_name_button")
+                                            .clip(CircleShape)
+                                            .background(Color.White.copy(alpha = 0.1f))
+                                            .clickable {
+                                                editNameText = currentPlayerName
+                                                showNameDialog = true
+                                            }
+                                            .testTag("edit_player_name_button"),
+                                        contentAlignment = Alignment.Center
                                     ) {
                                         Icon(
                                             imageVector = Icons.Default.Edit,
-                                            contentDescription = stringResource(id = R.string.leaderboard_edit_name_desc),
-                                            tint = Color.White.copy(alpha = 0.7f),
-                                            modifier = Modifier.size(16.dp)
+                                            contentDescription = null,
+                                            tint = Color.White.copy(alpha = 0.8f),
+                                            modifier = Modifier.size(14.dp)
                                         )
                                     }
                                 }
-                                Spacer(modifier = Modifier.height(3.dp))
-                                Text(
-                                    text = stringResource(
-                                        id = R.string.leaderboard_personal_best_format,
-                                        profile?.bestScore ?: 0
-                                    ),
-                                    fontSize = 12.sp,
-                                    color = Color.White.copy(alpha = 0.65f)
-                                )
-                            }
 
-                            Spacer(modifier = Modifier.width(8.dp))
+                                Spacer(modifier = Modifier.height(4.dp))
 
-                            // Top-player badge
-                            Row(
-                                modifier = Modifier
-                                    .clip(RoundedCornerShape(10.dp))
-                                    .background(GoldStar.copy(alpha = 0.16f))
-                                    .border(1.dp, GoldStar.copy(alpha = 0.35f), RoundedCornerShape(10.dp))
-                                    .padding(horizontal = 8.dp, vertical = 5.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                                horizontalArrangement = Arrangement.spacedBy(4.dp)
-                            ) {
-                                Icon(
-                                    imageVector = Icons.Default.MilitaryTech,
-                                    contentDescription = null,
-                                    tint = GoldStar,
-                                    modifier = Modifier.size(15.dp)
-                                )
                                 Text(
-                                    text = stringResource(id = R.string.leaderboard_top_player_badge),
-                                    fontSize = 10.sp,
-                                    fontWeight = FontWeight.Bold,
-                                    color = GoldStar
+                                    text = "${stringResource(id = R.string.leaderboard_personal_best_prefix)}${profile?.bestScore ?: 0} PTS",
+                                    fontSize = 13.sp,
+                                    fontWeight = FontWeight.Medium,
+                                    color = ElectricCyan
                                 )
                             }
                         }
                     }
                 }
 
-                // SECTION TITLE
                 item {
                     Text(
                         text = stringResource(id = R.string.leaderboard_section_title),
-                        fontSize = 15.sp,
-                        fontWeight = FontWeight.SemiBold,
-                        color = Color.White.copy(alpha = 0.9f),
-                        modifier = Modifier.padding(start = 2.dp, top = 8.dp, bottom = 2.dp)
+                        fontSize = 14.sp,
+                        fontWeight = FontWeight.Bold,
+                        color = Color.White.copy(alpha = 0.7f),
+                        modifier = Modifier.padding(start = 4.dp, top = 6.dp, bottom = 2.dp)
                     )
                 }
 
-                // LIST / EMPTY
                 if (topScores.isEmpty()) {
                     item {
                         LiquidGlassCard(modifier = Modifier.fillMaxWidth()) {
@@ -364,6 +343,7 @@ fun LeaderboardScreen(
                             rank = index + 1,
                             playerName = record.playerName,
                             score = record.score,
+                            avatar = record.avatar.ifBlank { "🐶" },
                             isCurrentPlayer = record.playerName == currentPlayerName
                         )
                     }
@@ -378,13 +358,14 @@ private fun SimpleLeaderboardRow(
     rank: Int,
     playerName: String,
     score: Int,
+    avatar: String,
     isCurrentPlayer: Boolean,
     modifier: Modifier = Modifier
 ) {
     val medalColor: Color? = when (rank) {
         1 -> GoldStar
-        2 -> Color(0xFFC0C0C0)
-        3 -> Color(0xFFCD7F32)
+        2 -> Color(0xFFE0E0E0)
+        3 -> Color(0xFFD47A3B)
         else -> null
     }
 
@@ -397,33 +378,36 @@ private fun SimpleLeaderboardRow(
         Row(
             modifier = Modifier
                 .fillMaxWidth()
-                .padding(horizontal = 13.dp, vertical = 12.dp),
+                .padding(horizontal = 14.dp, vertical = 12.dp),
             verticalAlignment = Alignment.CenterVertically
         ) {
-            // Rank badge: same icon-tile treatment as achievement icons
             Box(
                 modifier = Modifier
-                    .size(40.dp)
-                    .clip(RoundedCornerShape(12.dp))
-                    .background(
-                        medalColor?.copy(alpha = 0.17f) ?: Color.White.copy(alpha = 0.07f)
-                    )
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(medalColor?.copy(alpha = 0.2f) ?: Color.White.copy(alpha = 0.08f))
                     .border(
                         width = 1.dp,
-                        color = medalColor?.copy(alpha = 0.40f) ?: Color.White.copy(alpha = 0.08f),
-                        shape = RoundedCornerShape(12.dp)
+                        color = medalColor?.copy(alpha = 0.5f) ?: Color.White.copy(alpha = 0.12f),
+                        shape = CircleShape
                     ),
                 contentAlignment = Alignment.Center
             ) {
                 Text(
                     text = "$rank",
-                    fontSize = 16.sp,
+                    fontSize = 14.sp,
                     fontWeight = FontWeight.Bold,
-                    color = medalColor ?: Color.White.copy(alpha = 0.7f)
+                    color = medalColor ?: Color.White.copy(alpha = 0.8f)
                 )
             }
 
             Spacer(modifier = Modifier.width(12.dp))
+
+            Text(
+                text = avatar,
+                fontSize = 22.sp,
+                modifier = Modifier.padding(end = 10.dp)
+            )
 
             Row(
                 modifier = Modifier.weight(1f),
@@ -432,7 +416,7 @@ private fun SimpleLeaderboardRow(
                 Text(
                     text = playerName,
                     modifier = Modifier.weight(1f, fill = false),
-                    fontSize = 14.sp,
+                    fontSize = 15.sp,
                     fontWeight = FontWeight.SemiBold,
                     color = Color.White,
                     maxLines = 1,
@@ -444,7 +428,7 @@ private fun SimpleLeaderboardRow(
                         modifier = Modifier
                             .padding(start = 8.dp)
                             .clip(RoundedCornerShape(6.dp))
-                            .background(ElectricCyan.copy(alpha = 0.20f))
+                            .background(ElectricCyan.copy(alpha = 0.25f))
                             .padding(horizontal = 6.dp, vertical = 2.dp),
                         fontSize = 9.sp,
                         fontWeight = FontWeight.Bold,
@@ -454,20 +438,20 @@ private fun SimpleLeaderboardRow(
             }
 
             Row(
-                verticalAlignment = Alignment.Bottom,
+                verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(4.dp)
             ) {
                 Text(
                     text = "%,d".format(score),
                     fontSize = 16.sp,
-                    fontWeight = FontWeight.Bold,
+                    fontWeight = FontWeight.Black,
                     color = GoldStar
                 )
                 Text(
-                    text = stringResource(id = R.string.leaderboard_pts_suffix),
-                    modifier = Modifier.padding(bottom = 2.dp),
-                    fontSize = 10.sp,
-                    color = Color.White.copy(alpha = 0.55f)
+                    text = stringResource(id = R.string.leaderboard_pts_label),
+                    fontSize = 11.sp,
+                    fontWeight = FontWeight.Medium,
+                    color = Color.White.copy(alpha = 0.5f)
                 )
             }
         }

@@ -7,6 +7,7 @@ import androidx.room.PrimaryKey
 data class PlayerProfileEntity(
     @PrimaryKey val id: Int = 1,
     val playerName: String = "Tôi",
+    val avatar: String = "🐶",
     val playerLevel: Int = 1,
     val currentXp: Int = 0,
     val currentStreak: Int = 0,

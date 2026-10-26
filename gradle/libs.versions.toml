@@ -40,6 +40,7 @@ googleid = "1.1.1"
 
 # Google Ads
 playServicesAds = "24.2.0"
+coreKtxVersion = "1.10.3"
 
 [libraries]
 # AndroidX Core
@@ -118,6 +119,7 @@ googleid = { group = "com.google.android.libraries.identity.googleid", name = "g
 
 # Google Ads
 play-services-ads = { group = "com.google.android.gms", name = "play-services-ads", version.ref = "playServicesAds" }
+#core-ktx = { group = "com.google.android.play", name = "core-ktx", version.ref = "coreKtxVersion" }
 
 [plugins]
 android-application = { id = "com.android.application", version.ref = "agp" }

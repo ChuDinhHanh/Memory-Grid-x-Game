@@ -4,12 +4,6 @@ import android.content.Context
 import android.content.Intent
 import android.net.Uri
 import android.widget.Toast
-import androidx.compose.animation.AnimatedVisibility
-import androidx.compose.animation.core.tween
-import androidx.compose.animation.fadeIn
-import androidx.compose.animation.fadeOut
-import androidx.compose.animation.scaleIn
-import androidx.compose.animation.scaleOut
 import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
@@ -58,8 +52,11 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.window.Dialog
+import androidx.compose.ui.window.DialogProperties
 import com.example.R
 import com.example.data.local.PlayerProfileEntity
+import com.example.engine.ReviewHelper
 import com.example.ui.components.PrimaryButton
 import com.example.ui.components.SettingsDialog
 import com.example.ui.theme.AmberWarning
@@ -86,20 +83,16 @@ private fun GlassCard(
             .background(
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color.White.copy(alpha = 0.15f),
-                        Color.White.copy(alpha = 0.05f)
+                        Color.White.copy(alpha = 0.15f), Color.White.copy(alpha = 0.05f)
                     )
                 )
             )
             .border(
-                width = 1.dp,
-                brush = Brush.verticalGradient(
+                width = 1.dp, brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color.White.copy(alpha = 0.28f),
-                        Color.White.copy(alpha = 0.08f)
+                        Color.White.copy(alpha = 0.28f), Color.White.copy(alpha = 0.08f)
                     )
-                ),
-                shape = shape
+                ), shape = shape
             )
             .then(if (onClick != null) Modifier.clickable(onClick = onClick) else Modifier)
     ) {
@@ -139,15 +132,14 @@ fun HomeScreen(
     val bestLevel = profile?.bestLevel ?: 1
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = Color.Transparent
+        modifier = modifier.fillMaxSize(), containerColor = Color.Transparent
     ) { innerPadding ->
 
         Box(modifier = Modifier.fillMaxSize()) {
             LazyColumn(
                 modifier = Modifier
                     .fillMaxSize()
-                .padding(innerPadding)
+                    .padding(innerPadding)
                     .padding(horizontal = 20.dp),
                 contentPadding = PaddingValues(top = 16.dp, bottom = 28.dp),
                 verticalArrangement = Arrangement.spacedBy(14.dp)
@@ -207,8 +199,7 @@ fun HomeScreen(
                     Column(verticalArrangement = Arrangement.spacedBy(10.dp)) {
                         // 1. STREAK CARD
                         GlassCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(18.dp)
+                            modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -221,8 +212,11 @@ fun HomeScreen(
                                         .size(40.dp)
                                         .clip(RoundedCornerShape(12.dp))
                                         .background(AmberWarning.copy(alpha = 0.17f))
-                                        .border(1.dp, AmberWarning.copy(alpha = 0.35f), RoundedCornerShape(12.dp)),
-                                    contentAlignment = Alignment.Center
+                                        .border(
+                                            1.dp,
+                                            AmberWarning.copy(alpha = 0.35f),
+                                            RoundedCornerShape(12.dp)
+                                        ), contentAlignment = Alignment.Center
                                 ) {
                                     Text(text = "🔥", fontSize = 20.sp)
                                 }
@@ -246,8 +240,7 @@ fun HomeScreen(
                         val progress = currentLevelXp.toFloat() / 500f
 
                         GlassCard(
-                            modifier = Modifier.fillMaxWidth(),
-                            shape = RoundedCornerShape(18.dp)
+                            modifier = Modifier.fillMaxWidth(), shape = RoundedCornerShape(18.dp)
                         ) {
                             Row(
                                 modifier = Modifier
@@ -261,8 +254,9 @@ fun HomeScreen(
                                         .size(44.dp)
                                         .clip(CircleShape)
                                         .background(ElectricCyan.copy(alpha = 0.20f))
-                                        .border(1.5.dp, ElectricCyan.copy(alpha = 0.50f), CircleShape),
-                                    contentAlignment = Alignment.Center
+                                        .border(
+                                            1.5.dp, ElectricCyan.copy(alpha = 0.50f), CircleShape
+                                        ), contentAlignment = Alignment.Center
                                 ) {
                                     Text(
                                         text = "$level",
@@ -281,7 +275,9 @@ fun HomeScreen(
                                         verticalAlignment = Alignment.CenterVertically
                                     ) {
                                         Text(
-                                            text = stringResource(R.string.home_best_level_value, level).uppercase(),
+                                            text = stringResource(
+                                                R.string.home_best_level_value, level
+                                            ).uppercase(),
                                             fontSize = 12.sp,
                                             fontWeight = FontWeight.Bold,
                                             color = Color.White
@@ -303,7 +299,11 @@ fun HomeScreen(
                                             .height(10.dp)
                                             .clip(RoundedCornerShape(5.dp))
                                             .background(Color.White.copy(alpha = 0.12f))
-                                            .border(0.5.dp, Color.White.copy(alpha = 0.2f), RoundedCornerShape(5.dp))
+                                            .border(
+                                                0.5.dp,
+                                                Color.White.copy(alpha = 0.2f),
+                                                RoundedCornerShape(5.dp)
+                                            )
                                     ) {
                                         Box(
                                             modifier = Modifier
@@ -313,8 +313,7 @@ fun HomeScreen(
                                                 .background(
                                                     brush = Brush.horizontalGradient(
                                                         colors = listOf(
-                                                            ElectricCyan,
-                                                            Color(0xFF00E5FF)
+                                                            ElectricCyan, Color(0xFF00E5FF)
                                                         )
                                                     )
                                                 )
@@ -335,8 +334,7 @@ fun HomeScreen(
                         horizontalArrangement = Arrangement.spacedBy(12.dp)
                     ) {
                         GlassCard(
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(18.dp)
+                            modifier = Modifier.weight(1f), shape = RoundedCornerShape(18.dp)
                         ) {
                             Column(
                                 modifier = Modifier
@@ -378,8 +376,7 @@ fun HomeScreen(
                         }
 
                         GlassCard(
-                            modifier = Modifier.weight(1f),
-                            shape = RoundedCornerShape(18.dp)
+                            modifier = Modifier.weight(1f), shape = RoundedCornerShape(18.dp)
                         ) {
                             Column(
                                 modifier = Modifier
@@ -403,7 +400,9 @@ fun HomeScreen(
                                 Spacer(modifier = Modifier.height(8.dp))
 
                                 Text(
-                                    text = stringResource(R.string.home_best_level_value, bestLevel),
+                                    text = stringResource(
+                                        R.string.home_best_level_value, bestLevel
+                                    ),
                                     fontSize = 22.sp,
                                     fontWeight = FontWeight.Black,
                                     color = Color.White
@@ -462,47 +461,53 @@ fun HomeScreen(
             }
 
             // ---------------- SETTINGS DIALOG OVERLAY ----------------
-            AnimatedVisibility(
-                visible = showSettingsDialog,
-                enter = fadeIn(animationSpec = tween(200)) + scaleIn(initialScale = 0.85f),
-                exit = fadeOut(animationSpec = tween(150)) + scaleOut(targetScale = 0.85f),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.6f))
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = { showSettingsDialog = false }
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    SettingsDialog(
-                        isSoundOn = isSoundOn,
-                        isMusicOn = isMusicOn,
-                        isVibrationOn = isVibrationOn,
-                        onSoundToggle = onSoundToggle,
-                        onMusicToggle = onMusicToggle,
-                        onVibrationToggle = onVibrationToggle,
-                        onShareClick = {
-                            showSettingsDialog = false
-                            shareApp(context)
-                        },
-                        onPrivacyPolicyClick = {
-                            showSettingsDialog = false
-                            openPrivacyPolicy(context)
-                        },
-                        onDismissRequest = { showSettingsDialog = false },
-                        modifier = Modifier.clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = {}
-                        )
+
+            // ---------------- SETTINGS DIALOG OVERLAY ----------------
+            if (showSettingsDialog) {
+                Dialog(
+                    onDismissRequest = { showSettingsDialog = false },
+                    properties = DialogProperties(
+                        usePlatformDefaultWidth = false
                     )
+                ) {
+                    Box(
+                        modifier = Modifier
+                            .fillMaxSize()
+                            .background(Color.Black.copy(alpha = 0.6f))
+                            .clickable(interactionSource = remember {
+                                MutableInteractionSource()
+                            }, indication = null, onClick = {
+                                showSettingsDialog = false
+                            }), contentAlignment = Alignment.Center) {
+                        SettingsDialog(
+                            isSoundOn = isSoundOn,
+                            isMusicOn = isMusicOn,
+                            isVibrationOn = isVibrationOn,
+                            onSoundToggle = onSoundToggle,
+                            onMusicToggle = onMusicToggle,
+                            onVibrationToggle = onVibrationToggle,
+                            onShareClick = {
+                                showSettingsDialog = false
+                                shareApp(context)
+                            },
+                            onPrivacyPolicyClick = {
+                                showSettingsDialog = false
+                                openPrivacyPolicy(context)
+                            },
+                            onDismissRequest = {
+                                showSettingsDialog = false
+                            },
+                            modifier = Modifier.clickable(interactionSource = remember {
+                                MutableInteractionSource()
+                            }, indication = null, onClick = {}),
+                            onRateUsClick = {
+                                showSettingsDialog = false
+                                ReviewHelper.openPlayStore(context)
+                            })
+                    }
                 }
             }
+
         }
     }
 }
@@ -517,9 +522,7 @@ private fun ShortcutCard(
     modifier: Modifier = Modifier
 ) {
     GlassCard(
-        modifier = modifier,
-        shape = RoundedCornerShape(18.dp),
-        onClick = onClick
+        modifier = modifier, shape = RoundedCornerShape(18.dp), onClick = onClick
     ) {
         Row(
             modifier = Modifier
@@ -565,7 +568,9 @@ private fun openPrivacyPolicy(context: Context) {
         }
         context.startActivity(intent)
     } catch (e: Exception) {
-        Toast.makeText(context, context.getString(R.string.home_error_open_link), Toast.LENGTH_SHORT).show()
+        Toast.makeText(
+            context, context.getString(R.string.home_error_open_link), Toast.LENGTH_SHORT
+        ).show()
     }
 }
 
@@ -573,13 +578,16 @@ private fun shareApp(context: Context) {
     try {
         val playStoreUrl = "https://play.google.com/store/apps/details?id=${context.packageName}"
         val sendIntent = Intent(Intent.ACTION_SEND).apply {
-            putExtra(Intent.EXTRA_TEXT, context.getString(R.string.home_share_message, playStoreUrl))
+            putExtra(
+                Intent.EXTRA_TEXT, context.getString(R.string.home_share_message, playStoreUrl)
+            )
             type = "text/plain"
         }
         context.startActivity(
             Intent.createChooser(sendIntent, context.getString(R.string.home_share_chooser_title))
         )
     } catch (e: Exception) {
-        Toast.makeText(context, context.getString(R.string.home_error_share), Toast.LENGTH_SHORT).show()
+        Toast.makeText(context, context.getString(R.string.home_error_share), Toast.LENGTH_SHORT)
+            .show()
     }
 }

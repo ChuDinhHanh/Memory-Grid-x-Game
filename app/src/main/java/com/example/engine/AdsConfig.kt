@@ -14,7 +14,7 @@ object AdsConfig {
     var reviveEnabled by mutableStateOf(true)
         private set
 
-    fun fetch() {
+    fun fetch(function: () -> Unit) {
         val rc = Firebase.remoteConfig
         rc.setConfigSettingsAsync(
             remoteConfigSettings {

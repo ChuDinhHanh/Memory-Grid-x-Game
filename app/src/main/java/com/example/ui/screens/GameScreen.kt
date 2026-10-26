@@ -39,6 +39,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.example.data.model.GamePhase
+import com.example.engine.ReviewHelper
 import com.example.ui.components.GameHeader
 import com.example.ui.components.MemoryGrid
 import com.example.ui.components.SettingsDialog
@@ -80,10 +81,7 @@ fun GameScreen(
     // =========================================================
     // GAME OVER
     // =========================================================
-    if (
-        uiState.phase == GamePhase.RESULT &&
-        uiState.gameEndSummary != null
-    ) {
+    if (uiState.phase == GamePhase.RESULT && uiState.gameEndSummary != null) {
         GameOverScreen(
             summary = uiState.gameEndSummary,
             onPlayAgain = onPlayAgain,
@@ -96,8 +94,7 @@ fun GameScreen(
     }
 
     Scaffold(
-        modifier = modifier.fillMaxSize(),
-        containerColor = Color.Transparent
+        modifier = modifier.fillMaxSize(), containerColor = Color.Transparent
     ) { innerPadding ->
 
         Box(
@@ -184,10 +181,8 @@ fun GameScreen(
                 LaunchedEffect(uiState.countdownNumber) {
                     scale.snapTo(0.5f)
                     scale.animateTo(
-                        targetValue = 1.3f,
-                        animationSpec = tween(
-                            durationMillis = 500,
-                            easing = FastOutSlowInEasing
+                        targetValue = 1.3f, animationSpec = tween(
+                            durationMillis = 500, easing = FastOutSlowInEasing
                         )
                     )
                 }
@@ -210,71 +205,9 @@ fun GameScreen(
                 }
             }
 
-            // =====================================================
-            // SETTINGS OVERLAY
-            // =====================================================
-            AnimatedVisibility(
-                visible = showSettingsDialog,
-                enter = fadeIn(animationSpec = tween(200)) +
-                        scaleIn(
-                            initialScale = 0.85f,
-                            animationSpec = tween(250, easing = FastOutSlowInEasing)
-                        ),
-                exit = fadeOut(animationSpec = tween(150)) +
-                        scaleOut(
-                            targetScale = 0.85f,
-                            animationSpec = tween(150)
-                        ),
-                modifier = Modifier.fillMaxSize()
-            ) {
-                Box(
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .background(Color.Black.copy(alpha = 0.55f))
-                        .clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = {
-                                showSettingsDialog = false
-                                onResumeGame() // Tiết tục đếm ngược khi bấm nền tối
-                            }
-                        ),
-                    contentAlignment = Alignment.Center
-                ) {
-                    SettingsDialog(
-                        isSoundOn = isSoundOn,
-                        isMusicOn = isMusicOn,
-                        isVibrationOn = isVibrationOn,
-
-                        onSoundToggle = onSoundToggle,
-                        onMusicToggle = onMusicToggle,
-                        onVibrationToggle = onVibrationToggle,
-
-                        onShareClick = {
-                            showSettingsDialog = false
-                            onResumeGame()
-                            onShareClick()
-                            shareApp(context)
-                        },
-                        onPrivacyPolicyClick = {
-                            showSettingsDialog = false
-                            onResumeGame()
-                            onPrivacyPolicyClick()
-                            openPrivacyPolicy(context)
-                        },
-                        onDismissRequest = {
-                            showSettingsDialog = false
-                            onResumeGame() // Tiếp tục đếm ngược khi đóng dialog
-                        },
-                        modifier = Modifier.clickable(
-                            interactionSource = remember { MutableInteractionSource() },
-                            indication = null,
-                            onClick = {} // Chặn click xuyên qua dialog
-                        )
-                    )
-                }
-            }
         }
+
+
     }
 
     // =========================================================
@@ -294,6 +227,75 @@ fun GameScreen(
             cancelButtonRes = com.example.R.drawable.stope_btn
         )
     }
+
+    // =====================================================
+    // SETTINGS OVERLAY
+    // =====================================================
+
+
+    AnimatedVisibility(
+        visible = showSettingsDialog, enter = fadeIn(
+            animationSpec = tween(200)
+        ) + scaleIn(
+            initialScale = 0.85f, animationSpec = tween(
+                250, easing = FastOutSlowInEasing
+            )
+        ), exit = fadeOut(
+            animationSpec = tween(150)
+        ) + scaleOut(
+            targetScale = 0.85f, animationSpec = tween(150)
+        ), modifier = Modifier.fillMaxSize()
+    ) {
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.55f))
+                .clickable(interactionSource = remember {
+                    MutableInteractionSource()
+                }, indication = null, onClick = {
+                    showSettingsDialog = false
+                    onResumeGame()
+                }), contentAlignment = Alignment.Center
+        ) {
+            SettingsDialog(
+                isSoundOn = isSoundOn,
+                isMusicOn = isMusicOn,
+                isVibrationOn = isVibrationOn,
+
+                onSoundToggle = onSoundToggle,
+                onMusicToggle = onMusicToggle,
+                onVibrationToggle = onVibrationToggle,
+
+                onShareClick = {
+                    showSettingsDialog = false
+                    onResumeGame()
+                    onShareClick()
+                },
+
+                onPrivacyPolicyClick = {
+                    showSettingsDialog = false
+                    onResumeGame()
+                    onPrivacyPolicyClick()
+                },
+
+                onDismissRequest = {
+                    showSettingsDialog = false
+                    onResumeGame()
+                },
+
+                onRateUsClick = {
+                    showSettingsDialog = false
+                    onResumeGame()
+                    ReviewHelper.openPlayStore(context)
+                },
+
+                modifier = Modifier.clickable(interactionSource = remember {
+                    MutableInteractionSource()
+                }, indication = null, onClick = {})
+            )
+        }
+    }
+
 }
 
 // =========================================================

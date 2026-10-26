@@ -46,6 +46,7 @@ fun SettingsDialog(
     onVibrationToggle: () -> Unit,
     onShareClick: () -> Unit,
     onPrivacyPolicyClick: () -> Unit,
+    onRateUsClick: () -> Unit,
     onDismissRequest: (() -> Unit)? = null,
     modifier: Modifier = Modifier
 ) {
@@ -183,6 +184,13 @@ fun SettingsDialog(
                 ImageActionButton(
                     icon = R.drawable.privacy_policy,
                     onClick = onPrivacyPolicyClick
+                )
+
+
+                // Nút đánh giá
+                ImageActionButton(
+                    icon = R.drawable.rate_us,
+                    onClick = onRateUsClick
                 )
             }
         }

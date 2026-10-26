@@ -133,6 +133,7 @@ dependencies {
     implementation(libs.androidx.credentials)
     implementation(libs.androidx.credentials.play.services.auth)
     implementation(libs.googleid)
+//    implementation(libs.core.ktx)
 
     // Unit tests
     testImplementation(libs.androidx.compose.ui.test.junit4)
@@ -159,4 +160,9 @@ dependencies {
     // KSP processors
     ksp(libs.androidx.room.compiler)
     ksp(libs.moshi.kotlin.codegen)
+
+    implementation("androidx.work:work-runtime-ktx:2.9.0") // hoặc phiên bản tương đương
+
+    // Review
+    implementation("com.google.android.play:review-ktx:2.0.2")
 }
